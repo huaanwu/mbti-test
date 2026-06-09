@@ -1,0 +1,1183 @@
+/* MBTI Personality Test - 样式表
+ * 基于倪海厦占卜系统风格，深色主题+金色强调
+ */
+
+/* 修：移除 Google Fonts @import（老武机器屏蔽外网导致 ERR_CONNECTION_CLOSED）
+ * 改用系统字体栈：苹方/微软雅黑/思源黑体（中文）+ Helvetica Neue/sans-serif（英文） */
+
+:root {
+  --bg-primary: #1a1612;
+  --bg-secondary: #25201a;
+  --bg-card: #2d2520;
+  --bg-inner: #1e1915;
+  --accent-gold: #c9a84c;
+  --accent-gold-light: #e8d5a3;
+  --accent-red: #c94c4c;
+  --accent-green: #5a9a5a;
+  --accent-purple: #9a5a9a;
+  --accent-blue: #5a7a9a;
+  --text-primary: #e8e0d5;
+  --text-secondary: #a09888;
+  --text-muted: #6b6358;
+  --border: #3d3528;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container { max-width: 640px; margin: 0 auto; padding: 1rem; padding-bottom: 4rem; }
+
+/* ========== 页面切换 ========== */
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.4s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== 头部 ========== */
+.header {
+  text-align: center;
+  padding: 2rem 0 1.5rem;
+}
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+.header .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ========== 卡片 ========== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+.card-gold {
+  background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04));
+  border: 1px solid var(--accent-gold);
+}
+
+/* ========== 按钮 ========== */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 0.8rem;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-gold), #b8983a);
+  color: #1a1612;
+}
+.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--bg-inner); border-color: var(--accent-gold); }
+
+/* ========== 进度条 ========== */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-inner);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-light));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.progress-text {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* ========== 题目 ========== */
+.question-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 1.2rem;
+  line-height: 1.7;
+}
+
+/* 选项 */
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  background: var(--bg-inner);
+  border: 2px solid var(--bg-inner);
+  border-radius: 10px;
+  margin-bottom: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.option:hover { border-color: var(--border); }
+.option.selected {
+  border-color: var(--accent-gold);
+  background: rgba(201,168,76,0.08);
+}
+.option-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.option.selected .option-marker {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold);
+  color: #1a1612;
+}
+.option-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.option.selected .option-text { color: var(--text-primary); }
+
+/* ========== 李克特量表（1-5）========== */
+.likert-scale {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.likert-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.4rem;
+  background: var(--bg-inner);
+  border: 2px solid var(--bg-inner);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 0;
+}
+.likert-btn:hover {
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+.likert-btn.selected {
+  border-color: var(--accent-gold);
+  background: rgba(201,168,76,0.10);
+  color: var(--accent-gold);
+}
+.likert-num {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.likert-label {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-muted);
+}
+.likert-btn.selected .likert-label {
+  color: var(--accent-gold-light);
+}
+@media (max-width: 480px) {
+  .likert-label { font-size: 0.65rem; }
+  .likert-num { font-size: 1.2rem; }
+  .likert-btn { padding: 0.7rem 0.2rem; }
+}
+
+/* ========== 顶部模块 tab 导航 ========== */
+.module-tabs {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem 0 0.8rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 10;
+}
+.module-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.6rem 0.4rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.module-tab:hover { background: var(--bg-secondary); }
+.module-tab.active {
+  background: rgba(201,168,76,0.12);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+.module-tab-icon { font-size: 1.3rem; line-height: 1; }
+.module-tab-label { font-size: 0.8rem; font-weight: 500; }
+
+/* ========== 输入控件 ========== */
+.date-input,
+.text-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-inner);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.date-input:focus,
+.text-input:focus { border-color: var(--accent-gold); }
+.text-input { resize: vertical; min-height: 60px; }
+
+/* ========== 星座结果 ========== */
+.zodiac-card { text-align: left; }
+.zodiac-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+.zodiac-symbol {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+.zodiac-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+.zodiac-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.zodiac-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.zodiac-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-bottom: 0.6rem;
+}
+
+/* ========== 塔罗结果 ========== */
+.tarot-question {
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent-gold);
+  padding: 0.7rem 0.9rem;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.tarot-question em { color: var(--accent-gold-light); font-style: normal; }
+
+.tarot-cards { display: flex; gap: 0.6rem; }
+.tarot-cards-1 { justify-content: center; }
+.tarot-cards-3 { justify-content: space-between; }
+
+/* #G1 78 牌收集进度 */
+.tarot-cell {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.2rem;
+  text-align: center;
+  font-size: 0.7rem;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+.tarot-cell.owned {
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(244,208,63,0.08));
+  border-color: rgba(201,168,76,0.4);
+  color: var(--text-primary);
+}
+.tarot-cell.owned:hover { transform: translateY(-2px); border-color: var(--accent-gold); }
+.tarot-cell.locked { opacity: 0.5; filter: grayscale(0.6); }
+.tarot-cell-icon { font-size: 1.2rem; margin-bottom: 0.2rem; }
+.tarot-cell-name { font-size: 0.65rem; line-height: 1.2; min-height: 1.5em; }
+.tarot-cell-date { font-size: 0.55rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+.tarot-card {
+  flex: 1;
+  background: linear-gradient(135deg, var(--bg-card), #2a1f2a);
+  border: 2px solid #5a3a6a;
+  border-radius: 10px;
+  padding: 1rem 0.7rem;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(90, 58, 106, 0.2);
+}
+.tarot-card.reversed {
+  background: linear-gradient(135deg, #2a1f1a, var(--bg-card));
+  border-color: #6a3a3a;
+  transform: rotate(180deg);
+}
+.tarot-position {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-gold);
+  color: #1a1612;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 10px;
+  z-index: 2;
+}
+.tarot-card.reversed .tarot-position { transform: translateX(-50%) rotate(180deg); }
+.tarot-arcana {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+}
+.tarot-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  margin-bottom: 0.2rem;
+}
+.tarot-name-en {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.tarot-orientation {
+  font-size: 0.8rem;
+  color: var(--accent-gold);
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+}
+.tarot-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+}
+.tarot-keywords .tag {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .module-tab-label { font-size: 0.7rem; }
+  .module-tab-icon { font-size: 1.1rem; }
+  .tarot-cards-3 { flex-direction: column; }
+  .tarot-card { padding: 0.7rem 0.5rem; }
+  .tarot-name { font-size: 1rem; }
+}
+
+/* ========== 导航按钮 ========== */
+.nav-buttons {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+.nav-buttons .btn { margin-bottom: 0; }
+.nav-buttons .btn-secondary { flex: 1; }
+.nav-buttons .btn-primary { flex: 2; }
+
+/* ========== 结果页 ========== */
+.type-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent-gold), #b8983a);
+  color: #1a1612;
+  font-size: 2.5rem;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  border-radius: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+.type-name {
+  font-size: 1.1rem;
+  color: var(--accent-gold-light);
+  margin-bottom: 1rem;
+}
+
+/* 维度条 */
+.dimension-bar {
+  margin-bottom: 1rem;
+}
+.dimension-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+.dimension-track {
+  display: flex;
+  height: 8px;
+  background: var(--bg-inner);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.dimension-fill-left {
+  height: 100%;
+  background: var(--accent-blue);
+  border-radius: 4px 0 0 4px;
+  transition: width 0.6s ease;
+}
+.dimension-fill-right {
+  height: 100%;
+  background: var(--accent-gold);
+  border-radius: 0 4px 4px 0;
+  transition: width 0.6s ease;
+}
+.dimension-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* 认知功能栈 */
+.cognitive-stack {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0;
+}
+.cognitive-item {
+  background: var(--bg-inner);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+}
+.cognitive-item .fn-name {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+.cognitive-item .fn-desc {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* 描述文本 */
+.description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+/* 标签 */
+.tag {
+  display: inline-block;
+  background: var(--bg-inner);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0.2rem;
+}
+
+/* 分割线 */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.2rem 0;
+}
+
+/* 底部安全区 */
+.safe-bottom { height: 2rem; }
+
+/* 标签页 */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+.tab {
+  padding: 0.5rem 1rem;
+  background: var(--bg-inner);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: rgba(201,168,76,0.15);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+/* 免责声明 */
+.disclaimer {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1rem 0;
+  line-height: 1.5;
+}
+
+/* 分享按钮 */
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+.share-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+/* 海报模态框 */
+.poster-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+}
+.poster-container {
+  position: relative;
+  z-index: 1001;
+  max-width: 400px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+/* 3 个 poster 模态框共用 .poster-card 外壳样式（背景/边框/阴影）
+ * 3 号 review #7 修：未来要加某个海报专属样式，用 .poster-mbti / .poster-sx / .poster-tarot 修饰类
+ * 例如：.poster-card.poster-tarot { ... } 不会影响其它两个 */
+.poster-card {
+  background: linear-gradient(135deg, #1a1612, #2d2520);
+  border: 2px solid var(--accent-gold);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+/* 3 个修饰类（占位，未来扩展） */
+.poster-card.poster-mbti { /* MBTI 专属样式 */ }
+.poster-card.poster-sx { /* 生肖专属样式 */ }
+.poster-card.poster-tarot { /* 塔罗专属样式 */ }
+.poster-header {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.8rem;
+}
+.poster-logo {
+  font-size: 1.1rem;
+  color: var(--accent-gold);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.poster-tagline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+.poster-type-section {
+  margin: 1.2rem 0;
+}
+.poster-type-badge {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 20px rgba(201,168,76,0.3);
+}
+.poster-type-name {
+  font-size: 1rem;
+  color: var(--accent-gold-light);
+  margin-top: 0.3rem;
+}
+.poster-dimensions {
+  margin: 1rem 0;
+  text-align: left;
+}
+.poster-dim-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+}
+.poster-dim-label {
+  width: 40px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.poster-dim-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-inner);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.poster-dim-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.poster-dim-fill.left { background: var(--accent-blue); }
+.poster-dim-fill.right { background: var(--accent-gold); }
+.poster-cognitive {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.poster-cog-item {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid var(--accent-gold);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+.poster-cog-item .cog-name {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+.poster-cog-item .cog-role {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+.poster-footer {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.8rem;
+}
+.poster-qrcode {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+.poster-brand {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.poster-actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.poster-actions .btn {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* 生成海报按钮 */
+.poster-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+  border: 1px solid var(--accent-gold);
+  border-radius: 10px;
+  color: var(--accent-gold);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+.poster-btn:hover {
+  background: rgba(201,168,76,0.25);
+}
+
+/* 雷达图容器 */
+canvas#dimensionRadar,
+canvas#cognitiveRadar {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* 结果页类型徽章动画 */
+.type-badge {
+  animation: badgePop 0.5s ease;
+}
+@keyframes badgePop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 认知功能栈条 */
+.cognitive-stack-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.cognitive-stack-label {
+  width: 50px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+.cognitive-stack-track {
+  flex: 1;
+  height: 24px;
+  background: var(--bg-inner);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.cognitive-stack-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  padding-left: 0.6rem;
+}
+.cognitive-stack-fill.dominant { background: linear-gradient(90deg, var(--accent-gold), #b8983a); }
+.cognitive-stack-fill.auxiliary { background: linear-gradient(90deg, #5a7a9a, #4a6a8a); }
+.cognitive-stack-fill.tertiary { background: linear-gradient(90deg, #6b5a8a, #5a4a7a); }
+.cognitive-stack-fill.inferior { background: linear-gradient(90deg, #5a8a6a, #4a7a5a); }
+.cognitive-stack-fill span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1a1612;
+  white-space: nowrap;
+}
+.cognitive-stack-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+/* ========== 答题页布局 ========== */
+.quiz-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+.quiz-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.quiz-back:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+.quiz-progress-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.quiz-progress-track {
+  height: 6px;
+  background: var(--bg-inner);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-light));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.quiz-progress-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.quiz-spacer {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.quiz-body {
+  padding: 1.5rem 0;
+  min-height: calc(100vh - 200px);
+}
+.question-counter {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.8rem;
+}
+
+.quiz-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+  display: flex;
+  gap: 0.8rem;
+  z-index: 20;
+}
+.quiz-footer .btn { margin-bottom: 0; }
+.quiz-footer .btn-secondary { flex: 1; }
+.quiz-footer .btn-primary { flex: 2; }
+
+/* 题目卡片动画 */
+.question-card {
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 选项点击反馈 */
+.option {
+  position: relative;
+  overflow: hidden;
+}
+.option::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(201,168,76,0.15);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+.option:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* 模态框 */
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75);
+}
+.modal-card {
+  position: relative;
+  z-index: 1001;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 320px;
+  width: 90%;
+  text-align: center;
+}
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+.modal-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+.modal-actions .btn {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* 选项选中动画 */
+.option.selected {
+  animation: selectPulse 0.3s ease;
+}
+@keyframes selectPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* 李克特按钮选中 */
+.likert-btn.selected {
+  animation: selectPulse 0.3s ease;
+}
+
+/* 题目切换方向动画 */
+.question-card.slide-left {
+  animation: slideLeft 0.25s ease forwards;
+}
+.question-card.slide-right {
+  animation: slideRight 0.25s ease forwards;
+}
+@keyframes slideLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-30px); }
+}
+@keyframes slideRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+/* ========== #2 配对 UI 布局 ========== */
+.couple-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.couple-tarot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.couple-compat-tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.couple-compat-harmony {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+.couple-compat-tension {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.couple-compat-neutral {
+  background: rgba(201, 168, 76, 0.15);
+  color: var(--accent-gold);
+}
+
+/* ========== 生日三下拉 ========== */
+.birthday-selects {
+  display: flex;
+  gap: 0.4rem;
+}
+.birthday-selects select {
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+}
+.birthday-selects select option[value=""] {
+  color: var(--text-muted);
+}
+
+/* ========== 城市搜索 ========== */
+.city-search {
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+.city-search::placeholder {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ========== 响应式优化 ========== */
+@media (max-width: 480px) {
+  .couple-chart-grid,
+  .couple-tarot-grid {
+    grid-template-columns: 1fr;
+  }
+  .birthday-selects select {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.3rem;
+  }
+  .quiz-footer {
+    padding: 0.8rem;
+  }
+  .question-text {
+    font-size: 1rem;
+  }
+  .option {
+    padding: 0.9rem 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .quiz-header {
+    padding: 0.6rem 0;
+  }
+  .quiz-back {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  .quiz-spacer {
+    width: 32px;
+  }
+}
+
+/* 加载动画 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 选择版本卡片 */
+.version-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.version-card:hover { border-color: var(--accent-gold); }
+.version-icon {
+  font-size: 2rem;
+  width: 48px;
+  text-align: center;
+}
+.version-info { flex: 1; }
+.version-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+.version-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.version-time {
+  font-size: 0.75rem;
+  color: var(--accent-gold);
+  background: rgba(201,168,76,0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}

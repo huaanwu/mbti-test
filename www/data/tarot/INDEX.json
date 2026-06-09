@@ -1,0 +1,682 @@
+[
+  {
+    "id": "major-00",
+    "arcana": "major",
+    "number": 0,
+    "nameCn": "愚者",
+    "nameEn": "The Fool",
+    "file": "tarot/major/00.md"
+  },
+  {
+    "id": "major-01",
+    "arcana": "major",
+    "number": 1,
+    "nameCn": "魔术师",
+    "nameEn": "The Magician",
+    "file": "tarot/major/01.md"
+  },
+  {
+    "id": "major-02",
+    "arcana": "major",
+    "number": 2,
+    "nameCn": "女祭司",
+    "nameEn": "The High Priestess",
+    "file": "tarot/major/02.md"
+  },
+  {
+    "id": "major-03",
+    "arcana": "major",
+    "number": 3,
+    "nameCn": "皇后",
+    "nameEn": "The Empress",
+    "file": "tarot/major/03.md"
+  },
+  {
+    "id": "major-04",
+    "arcana": "major",
+    "number": 4,
+    "nameCn": "皇帝",
+    "nameEn": "The Emperor",
+    "file": "tarot/major/04.md"
+  },
+  {
+    "id": "major-05",
+    "arcana": "major",
+    "number": 5,
+    "nameCn": "教皇",
+    "nameEn": "The Hierophant",
+    "file": "tarot/major/05.md"
+  },
+  {
+    "id": "major-06",
+    "arcana": "major",
+    "number": 6,
+    "nameCn": "恋人",
+    "nameEn": "The Lovers",
+    "file": "tarot/major/06.md"
+  },
+  {
+    "id": "major-07",
+    "arcana": "major",
+    "number": 7,
+    "nameCn": "战车",
+    "nameEn": "The Chariot",
+    "file": "tarot/major/07.md"
+  },
+  {
+    "id": "major-08",
+    "arcana": "major",
+    "number": 8,
+    "nameCn": "力量",
+    "nameEn": "Strength",
+    "file": "tarot/major/08.md"
+  },
+  {
+    "id": "major-09",
+    "arcana": "major",
+    "number": 9,
+    "nameCn": "隐者",
+    "nameEn": "The Hermit",
+    "file": "tarot/major/09.md"
+  },
+  {
+    "id": "major-10",
+    "arcana": "major",
+    "number": 10,
+    "nameCn": "命运之轮",
+    "nameEn": "Wheel of Fortune",
+    "file": "tarot/major/10.md"
+  },
+  {
+    "id": "major-11",
+    "arcana": "major",
+    "number": 11,
+    "nameCn": "正义",
+    "nameEn": "Justice",
+    "file": "tarot/major/11.md"
+  },
+  {
+    "id": "major-12",
+    "arcana": "major",
+    "number": 12,
+    "nameCn": "倒吊人",
+    "nameEn": "The Hanged Man",
+    "file": "tarot/major/12.md"
+  },
+  {
+    "id": "major-13",
+    "arcana": "major",
+    "number": 13,
+    "nameCn": "死神",
+    "nameEn": "Death",
+    "file": "tarot/major/13.md"
+  },
+  {
+    "id": "major-14",
+    "arcana": "major",
+    "number": 14,
+    "nameCn": "节制",
+    "nameEn": "Temperance",
+    "file": "tarot/major/14.md"
+  },
+  {
+    "id": "major-15",
+    "arcana": "major",
+    "number": 15,
+    "nameCn": "恶魔",
+    "nameEn": "The Devil",
+    "file": "tarot/major/15.md"
+  },
+  {
+    "id": "major-16",
+    "arcana": "major",
+    "number": 16,
+    "nameCn": "塔",
+    "nameEn": "The Tower",
+    "file": "tarot/major/16.md"
+  },
+  {
+    "id": "major-17",
+    "arcana": "major",
+    "number": 17,
+    "nameCn": "星星",
+    "nameEn": "The Star",
+    "file": "tarot/major/17.md"
+  },
+  {
+    "id": "major-18",
+    "arcana": "major",
+    "number": 18,
+    "nameCn": "月亮",
+    "nameEn": "The Moon",
+    "file": "tarot/major/18.md"
+  },
+  {
+    "id": "major-19",
+    "arcana": "major",
+    "number": 19,
+    "nameCn": "太阳",
+    "nameEn": "The Sun",
+    "file": "tarot/major/19.md"
+  },
+  {
+    "id": "major-20",
+    "arcana": "major",
+    "number": 20,
+    "nameCn": "审判",
+    "nameEn": "Judgement",
+    "file": "tarot/major/20.md"
+  },
+  {
+    "id": "major-21",
+    "arcana": "major",
+    "number": 21,
+    "nameCn": "世界",
+    "nameEn": "The World",
+    "file": "tarot/major/21.md"
+  },
+  {
+    "id": "wands-1",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 1,
+    "nameCn": "权杖王牌",
+    "nameEn": "Ace of Wands",
+    "file": "tarot/minor/wands/1.md"
+  },
+  {
+    "id": "wands-2",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 2,
+    "nameCn": "权杖二",
+    "nameEn": "Two of Wands",
+    "file": "tarot/minor/wands/2.md"
+  },
+  {
+    "id": "wands-3",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 3,
+    "nameCn": "权杖三",
+    "nameEn": "Three of Wands",
+    "file": "tarot/minor/wands/3.md"
+  },
+  {
+    "id": "wands-4",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 4,
+    "nameCn": "权杖四",
+    "nameEn": "Four of Wands",
+    "file": "tarot/minor/wands/4.md"
+  },
+  {
+    "id": "wands-5",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 5,
+    "nameCn": "权杖五",
+    "nameEn": "Five of Wands",
+    "file": "tarot/minor/wands/5.md"
+  },
+  {
+    "id": "wands-6",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 6,
+    "nameCn": "权杖六",
+    "nameEn": "Six of Wands",
+    "file": "tarot/minor/wands/6.md"
+  },
+  {
+    "id": "wands-7",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 7,
+    "nameCn": "权杖七",
+    "nameEn": "Seven of Wands",
+    "file": "tarot/minor/wands/7.md"
+  },
+  {
+    "id": "wands-8",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 8,
+    "nameCn": "权杖八",
+    "nameEn": "Eight of Wands",
+    "file": "tarot/minor/wands/8.md"
+  },
+  {
+    "id": "wands-9",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 9,
+    "nameCn": "权杖九",
+    "nameEn": "Nine of Wands",
+    "file": "tarot/minor/wands/9.md"
+  },
+  {
+    "id": "wands-10",
+    "arcana": "minor",
+    "suit": "wands",
+    "number": 10,
+    "nameCn": "权杖十",
+    "nameEn": "Ten of Wands",
+    "file": "tarot/minor/wands/10.md"
+  },
+  {
+    "id": "wands-page",
+    "arcana": "minor",
+    "suit": "wands",
+    "court": "page",
+    "nameCn": "权杖侍从",
+    "nameEn": "Page of Wands",
+    "file": "tarot/minor/wands/page.md"
+  },
+  {
+    "id": "wands-knight",
+    "arcana": "minor",
+    "suit": "wands",
+    "court": "knight",
+    "nameCn": "权杖骑士",
+    "nameEn": "Knight of Wands",
+    "file": "tarot/minor/wands/knight.md"
+  },
+  {
+    "id": "wands-queen",
+    "arcana": "minor",
+    "suit": "wands",
+    "court": "queen",
+    "nameCn": "权杖皇后",
+    "nameEn": "Queen of Wands",
+    "file": "tarot/minor/wands/queen.md"
+  },
+  {
+    "id": "wands-king",
+    "arcana": "minor",
+    "suit": "wands",
+    "court": "king",
+    "nameCn": "权杖国王",
+    "nameEn": "King of Wands",
+    "file": "tarot/minor/wands/king.md"
+  },
+  {
+    "id": "cups-1",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 1,
+    "nameCn": "圣杯王牌",
+    "nameEn": "Ace of Cups",
+    "file": "tarot/minor/cups/1.md"
+  },
+  {
+    "id": "cups-2",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 2,
+    "nameCn": "圣杯二",
+    "nameEn": "Two of Cups",
+    "file": "tarot/minor/cups/2.md"
+  },
+  {
+    "id": "cups-3",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 3,
+    "nameCn": "圣杯三",
+    "nameEn": "Three of Cups",
+    "file": "tarot/minor/cups/3.md"
+  },
+  {
+    "id": "cups-4",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 4,
+    "nameCn": "圣杯四",
+    "nameEn": "Four of Cups",
+    "file": "tarot/minor/cups/4.md"
+  },
+  {
+    "id": "cups-5",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 5,
+    "nameCn": "圣杯五",
+    "nameEn": "Five of Cups",
+    "file": "tarot/minor/cups/5.md"
+  },
+  {
+    "id": "cups-6",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 6,
+    "nameCn": "圣杯六",
+    "nameEn": "Six of Cups",
+    "file": "tarot/minor/cups/6.md"
+  },
+  {
+    "id": "cups-7",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 7,
+    "nameCn": "圣杯七",
+    "nameEn": "Seven of Cups",
+    "file": "tarot/minor/cups/7.md"
+  },
+  {
+    "id": "cups-8",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 8,
+    "nameCn": "圣杯八",
+    "nameEn": "Eight of Cups",
+    "file": "tarot/minor/cups/8.md"
+  },
+  {
+    "id": "cups-9",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 9,
+    "nameCn": "圣杯九",
+    "nameEn": "Nine of Cups",
+    "file": "tarot/minor/cups/9.md"
+  },
+  {
+    "id": "cups-10",
+    "arcana": "minor",
+    "suit": "cups",
+    "number": 10,
+    "nameCn": "圣杯十",
+    "nameEn": "Ten of Cups",
+    "file": "tarot/minor/cups/10.md"
+  },
+  {
+    "id": "cups-page",
+    "arcana": "minor",
+    "suit": "cups",
+    "court": "page",
+    "nameCn": "圣杯侍从",
+    "nameEn": "Page of Cups",
+    "file": "tarot/minor/cups/page.md"
+  },
+  {
+    "id": "cups-knight",
+    "arcana": "minor",
+    "suit": "cups",
+    "court": "knight",
+    "nameCn": "圣杯骑士",
+    "nameEn": "Knight of Cups",
+    "file": "tarot/minor/cups/knight.md"
+  },
+  {
+    "id": "cups-queen",
+    "arcana": "minor",
+    "suit": "cups",
+    "court": "queen",
+    "nameCn": "圣杯皇后",
+    "nameEn": "Queen of Cups",
+    "file": "tarot/minor/cups/queen.md"
+  },
+  {
+    "id": "cups-king",
+    "arcana": "minor",
+    "suit": "cups",
+    "court": "king",
+    "nameCn": "圣杯国王",
+    "nameEn": "King of Cups",
+    "file": "tarot/minor/cups/king.md"
+  },
+  {
+    "id": "swords-1",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 1,
+    "nameCn": "宝剑王牌",
+    "nameEn": "Ace of Swords",
+    "file": "tarot/minor/swords/1.md"
+  },
+  {
+    "id": "swords-2",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 2,
+    "nameCn": "宝剑二",
+    "nameEn": "Two of Swords",
+    "file": "tarot/minor/swords/2.md"
+  },
+  {
+    "id": "swords-3",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 3,
+    "nameCn": "宝剑三",
+    "nameEn": "Three of Swords",
+    "file": "tarot/minor/swords/3.md"
+  },
+  {
+    "id": "swords-4",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 4,
+    "nameCn": "宝剑四",
+    "nameEn": "Four of Swords",
+    "file": "tarot/minor/swords/4.md"
+  },
+  {
+    "id": "swords-5",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 5,
+    "nameCn": "宝剑五",
+    "nameEn": "Five of Swords",
+    "file": "tarot/minor/swords/5.md"
+  },
+  {
+    "id": "swords-6",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 6,
+    "nameCn": "宝剑六",
+    "nameEn": "Six of Swords",
+    "file": "tarot/minor/swords/6.md"
+  },
+  {
+    "id": "swords-7",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 7,
+    "nameCn": "宝剑七",
+    "nameEn": "Seven of Swords",
+    "file": "tarot/minor/swords/7.md"
+  },
+  {
+    "id": "swords-8",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 8,
+    "nameCn": "宝剑八",
+    "nameEn": "Eight of Swords",
+    "file": "tarot/minor/swords/8.md"
+  },
+  {
+    "id": "swords-9",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 9,
+    "nameCn": "宝剑九",
+    "nameEn": "Nine of Swords",
+    "file": "tarot/minor/swords/9.md"
+  },
+  {
+    "id": "swords-10",
+    "arcana": "minor",
+    "suit": "swords",
+    "number": 10,
+    "nameCn": "宝剑十",
+    "nameEn": "Ten of Swords",
+    "file": "tarot/minor/swords/10.md"
+  },
+  {
+    "id": "swords-page",
+    "arcana": "minor",
+    "suit": "swords",
+    "court": "page",
+    "nameCn": "宝剑侍从",
+    "nameEn": "Page of Swords",
+    "file": "tarot/minor/swords/page.md"
+  },
+  {
+    "id": "swords-knight",
+    "arcana": "minor",
+    "suit": "swords",
+    "court": "knight",
+    "nameCn": "宝剑骑士",
+    "nameEn": "Knight of Swords",
+    "file": "tarot/minor/swords/knight.md"
+  },
+  {
+    "id": "swords-queen",
+    "arcana": "minor",
+    "suit": "swords",
+    "court": "queen",
+    "nameCn": "宝剑皇后",
+    "nameEn": "Queen of Swords",
+    "file": "tarot/minor/swords/queen.md"
+  },
+  {
+    "id": "swords-king",
+    "arcana": "minor",
+    "suit": "swords",
+    "court": "king",
+    "nameCn": "宝剑国王",
+    "nameEn": "King of Swords",
+    "file": "tarot/minor/swords/king.md"
+  },
+  {
+    "id": "pentacles-1",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 1,
+    "nameCn": "星币王牌",
+    "nameEn": "Ace of Pentacles",
+    "file": "tarot/minor/pentacles/1.md"
+  },
+  {
+    "id": "pentacles-2",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 2,
+    "nameCn": "星币二",
+    "nameEn": "Two of Pentacles",
+    "file": "tarot/minor/pentacles/2.md"
+  },
+  {
+    "id": "pentacles-3",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 3,
+    "nameCn": "星币三",
+    "nameEn": "Three of Pentacles",
+    "file": "tarot/minor/pentacles/3.md"
+  },
+  {
+    "id": "pentacles-4",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 4,
+    "nameCn": "星币四",
+    "nameEn": "Four of Pentacles",
+    "file": "tarot/minor/pentacles/4.md"
+  },
+  {
+    "id": "pentacles-5",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 5,
+    "nameCn": "星币五",
+    "nameEn": "Five of Pentacles",
+    "file": "tarot/minor/pentacles/5.md"
+  },
+  {
+    "id": "pentacles-6",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 6,
+    "nameCn": "星币六",
+    "nameEn": "Six of Pentacles",
+    "file": "tarot/minor/pentacles/6.md"
+  },
+  {
+    "id": "pentacles-7",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 7,
+    "nameCn": "星币七",
+    "nameEn": "Seven of Pentacles",
+    "file": "tarot/minor/pentacles/7.md"
+  },
+  {
+    "id": "pentacles-8",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 8,
+    "nameCn": "星币八",
+    "nameEn": "Eight of Pentacles",
+    "file": "tarot/minor/pentacles/8.md"
+  },
+  {
+    "id": "pentacles-9",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 9,
+    "nameCn": "星币九",
+    "nameEn": "Nine of Pentacles",
+    "file": "tarot/minor/pentacles/9.md"
+  },
+  {
+    "id": "pentacles-10",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "number": 10,
+    "nameCn": "星币十",
+    "nameEn": "Ten of Pentacles",
+    "file": "tarot/minor/pentacles/10.md"
+  },
+  {
+    "id": "pentacles-page",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "court": "page",
+    "nameCn": "星币侍从",
+    "nameEn": "Page of Pentacles",
+    "file": "tarot/minor/pentacles/page.md"
+  },
+  {
+    "id": "pentacles-knight",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "court": "knight",
+    "nameCn": "星币骑士",
+    "nameEn": "Knight of Pentacles",
+    "file": "tarot/minor/pentacles/knight.md"
+  },
+  {
+    "id": "pentacles-queen",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "court": "queen",
+    "nameCn": "星币皇后",
+    "nameEn": "Queen of Pentacles",
+    "file": "tarot/minor/pentacles/queen.md"
+  },
+  {
+    "id": "pentacles-king",
+    "arcana": "minor",
+    "suit": "pentacles",
+    "court": "king",
+    "nameCn": "星币国王",
+    "nameEn": "King of Pentacles",
+    "file": "tarot/minor/pentacles/king.md"
+  }
+]

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1612">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!--
+  CSP (review M1)：收紧外联和危险源，inline script 暂允许直到 O1 全量事件委托
+  TODO(O1)：app.js 全部内联 onclick 改 addEventListener 后，去掉 'unsafe-inline' 并加
+  script-src-attr 'none' / script-src-elem 'self'，完全禁止 inline JS
+  注意：frame-ancestors 在 <meta> 里无效（必须 HTTP header），前端不做
+-->
+<!--
+  CSP (review M1 + O1)：O1 全量事件委托后已去掉 'unsafe-inline'，inline JS 全禁
+  frame-ancestors 在 <meta> 里无效（必须 HTTP header），前端不做
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  img-src 'self' data:;
+  connect-src 'self' https://api.deepseek.com;
+  font-src 'self' data: https://fonts.gstatic.com;
+  object-src 'none';
+  base-uri 'self';
+">
+<title>MBTI 性格测试</title>
+<link rel="stylesheet" href="css/mbti-styles.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ============ 顶部模块切换 tab ============ -->
+  <button id="btnHistoryToggle" style="position:fixed; top:0.5rem; right:0.5rem; z-index:100; background:rgba(201,168,76,0.2); color:var(--accent-gold); border:1px solid rgba(201,168,76,0.4); padding:0.4rem 0.8rem; border-radius:0.5rem; font-size:0.85rem; cursor:pointer;">📚 我的历史</button>
+
+  <nav class="module-tabs" id="moduleTabs">
+    <button class="module-tab active" data-tab="mbti">
+      <span class="module-tab-icon">🔮</span>
+      <span class="module-tab-label">MBTI</span>
+    </button>
+    <button class="module-tab" data-tab="zodiac">
+      <span class="module-tab-icon">⭐</span>
+      <span class="module-tab-label">星座</span>
+    </button>
+    <button class="module-tab" data-tab="shengxiao">
+      <span class="module-tab-icon">🐲</span>
+      <span class="module-tab-label">生肖</span>
+    </button>
+    <button class="module-tab" data-tab="tarot">
+      <span class="module-tab-icon">🃏</span>
+      <span class="module-tab-label">塔罗</span>
+    </button>
+  </nav>
+
+  <!-- ============ 首页 ============ -->
+  <div class="page active" id="pageHome">
+    <div class="header">
+      <h1>MBTI 性格测试</h1>
+      <div class="subtitle">发现你的性格类型，探索认知功能</div>
+    </div>
+    
+    <div class="card card-gold">
+      <div style="text-align:center; margin-bottom:1rem;">
+        <div style="font-size:3rem; margin-bottom:0.5rem;">🔮</div>
+        <div style="font-size:1rem; color:var(--text-primary); font-weight:500;">
+          基于荣格心理类型理论
+        </div>
+      </div>
+      <div class="description" style="text-align:center;">
+        通过分析你的精力来源、认知方式、判断方式和生活态度，
+        生成16种人格类型中的一种，并推导你的荣格八维认知功能栈。
+      </div>
+    </div>
+
+    <div style="margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-secondary);">选择测试版本：</div>
+    
+    <div class="version-card" data-quiz-version="60">
+      <div class="version-icon">📋</div>
+      <div class="version-info">
+        <div class="version-title">完整版 · 60题</div>
+        <div class="version-desc">15-20分钟 · 深度分析 · 认知功能推导</div>
+      </div>
+      <div class="version-time">推荐</div>
+    </div>
+
+    <div class="version-card" data-quiz-version="28">
+      <div class="version-icon">⚡</div>
+      <div class="version-info">
+        <div class="version-title">快速版 · 28题</div>
+        <div class="version-desc">5-8分钟 · 快速筛查 · 社交分享</div>
+      </div>
+      <div class="version-time">5分钟</div>
+    </div>
+
+    <div class="version-card" data-quiz-version="40">
+      <div class="version-icon">📊</div>
+      <div class="version-info">
+        <div class="version-title">量表版 · 40题</div>
+        <div class="version-desc">8-12分钟 · 1-5分李克特量表 · 测量更精准</div>
+      </div>
+      <div class="version-time">新</div>
+    </div>
+
+    <div class="version-card" data-quiz-version="20">
+      <div class="version-icon">🎬</div>
+      <div class="version-info">
+        <div class="version-title">场景版 · 20题</div>
+        <div class="version-desc">4-6分钟 · 生活情境选择 · 直观易懂</div>
+      </div>
+      <div class="version-time">新</div>
+    </div>
+
+    <div class="divider"></div>
+    
+    <div style="font-size:0.8rem; color:var(--text-muted); text-align:center;">
+      <div style="margin-bottom:0.5rem;">📊 已帮助 <span style="color:var(--accent-gold);">0</span> 人发现自我</div>
+      <div>与 <a href="#" style="color:var(--accent-gold);">倪海厦占卜系统</a> 形成中西合璧解读</div>
+    </div>
+
+    <div class="disclaimer">
+      本测试基于心理学理论，仅供自我认知参考，请理性看待结果。<br>
+      不涉及医疗诊断或命运预测。
+    </div>
+  </div>
+
+  <!-- ============ 答题页 ============ -->
+  <div class="page" id="pageQuiz">
+    <!-- 顶部导航：返回+进度 -->
+    <div class="quiz-header">
+      <button class="quiz-back" data-action="quit-quiz" title="退出测试">✕</button>
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-track">
+          <div class="quiz-progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="quiz-progress-text" id="progressText">1 / 60</div>
+      </div>
+      <div class="quiz-spacer"></div>
+    </div>
+
+    <!-- 题目区域 -->
+    <div class="quiz-body">
+      <div class="question-counter" id="questionCounter">Question 1</div>
+      <div id="questionContainer"></div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="quiz-footer">
+      <button class="btn btn-secondary" id="btnPrev" data-action="prev-question" style="display:none;">⬅ 上一题</button>
+      <button class="btn btn-primary" id="btnNext" data-action="next-question" disabled>下一题 ➡</button>
+    </div>
+
+    <!-- 退出确认模态框 -->
+    <div class="modal" id="quitModal" style="display:none;">
+      <div class="modal-overlay" data-action="cancel-quit"></div>
+      <div class="modal-card">
+        <div class="modal-title">确认退出？</div>
+        <div class="modal-desc">当前进度不会保存，确定要退出吗？</div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" data-action="cancel-quit">继续测试</button>
+          <button class="btn btn-primary" data-action="confirm-quit">退出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 结果页 ============ -->
+  <div class="page" id="pageResult">
+    <div class="header" style="padding:1.5rem 0;">
+      <div style="text-align:center;">
+        <div class="type-badge" id="typeCode">INTJ</div>
+        <div class="type-name" id="typeName">建筑师 · 战略家</div>
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active result-tab" data-tab="overview">概览</div>
+      <div class="tab result-tab" data-tab="dimensions">维度</div>
+      <div class="tab result-tab" data-tab="cognitive">认知功能</div>
+      <div class="tab result-tab" data-tab="report">报告</div>
+    </div>
+    
+    <!-- 概览 -->
+    <div id="tabOverview" class="tab-content">
+      <div class="card">
+        <div class="description" id="typeDescription">
+           loading...
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">核心特质：</div>
+        <div id="typeTraits"></div>
+      </div>
+      
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">适合领域：</div>
+        <div id="typeCareers"></div>
+      </div>
+    </div>
+    
+    <!-- 维度 -->
+    <div id="tabDimensions" class="tab-content" style="display:none;">
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+          四维度雷达图
+        </div>
+        <canvas id="dimensionRadar" width="320" height="280"></canvas>
+      </div>
+      
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+          四维度分数分布
+        </div>
+        <div id="dimensionBars"></div>
+      </div>
+      
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">你的类型代码解析：</div>
+        <div id="typeBreakdown" style="font-size:0.9rem; line-height:1.8; color:var(--text-secondary);"></div>
+      </div>
+    </div>
+    
+    <!-- 认知功能 -->
+    <div id="tabCognitive" class="tab-content" style="display:none;">
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+          认知功能强度雷达
+        </div>
+        <canvas id="cognitiveRadar" width="320" height="280"></canvas>
+      </div>
+      
+      <div class="card">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+          荣格八维认知功能栈（按使用强度排序）
+        </div>
+        <div id="cognitiveStack"></div>
+        <div class="divider"></div>
+        <div class="description" style="font-size:0.85rem;">
+          <strong>主导功能：</strong>你最自然、最熟练的认知模式<br>
+          <strong>辅助功能：</strong>支持你主导功能的第二模式<br>
+          <strong>第三功能：</strong>童年时期发展，成年后可强化<br>
+          <strong>劣势功能：</strong>你的盲点，压力下易失控
+        </div>
+      </div>
+    </div>
+    
+    <!-- 报告 -->
+    <div id="tabReport" class="tab-content" style="display:none;">
+      <div class="card">
+        <div style="text-align:center; margin-bottom:1rem;">
+          <div style="font-size:1.1rem; font-weight:600; color:var(--accent-gold);">深度分析报告</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">AI 生成 · 个性化解读</div>
+        </div>
+        <div id="aiReport" class="description">
+          <div class="loading"><div class="loading-spinner"></div></div>
+        </div>
+        <button class="btn btn-primary" id="btnGenerateReport" data-action="generate-ai">
+          🤖 生成 AI 深度报告（MBTI）
+        </button>
+
+        <!-- A1：MBTI × 星座 联合解读（老武最早提"中西合璧"）-->
+        <div id="jointReport" class="description" style="margin-top:1rem; padding-top:0.8rem; border-top:1px dashed rgba(255,255,255,0.15);"></div>
+        <button class="btn btn-primary" id="btnGenerateJoint" data-action="generate-joint"
+                style="margin-top:0.6rem; background:linear-gradient(135deg, rgba(201,168,76,0.2), rgba(168,85,247,0.15)); border:1px solid rgba(201,168,76,0.4); color:var(--accent-gold);">
+          🌟 MBTI × 星座 联合解读（中西合璧）
+        </button>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+          需先在"星座" tab 填生日（4 字段），联合解读基于 MBTI + 太阳/月亮/上升/5 行星
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn btn-secondary" data-action="restart">🔄 重新测试</button>
+    <button class="share-btn" data-action="share">📤 分享结果</button>
+    <button class="poster-btn" data-action="show-poster">🖼️ 生成分享海报</button>
+    
+    <!-- 倪海厦联动 -->
+    <div class="card card-gold" style="margin-top:1rem;">
+      <div style="text-align:center; margin-bottom:0.8rem;">
+        <div style="font-size:1.8rem; margin-bottom:0.3rem;">☯️</div>
+        <div style="font-size:1rem; color:var(--accent-gold); font-weight:600;">中西合璧 · 深度解读</div>
+      </div>
+      <div class="description" style="text-align:center; font-size:0.85rem; margin-bottom:1rem;">
+        你的 MBTI 类型与东方命理有何关联？输入生辰，探索性格与命运的交汇。
+      </div>
+      <div id="baziInputSection">
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.3rem;">出生日期</label>
+        <div class="birthday-selects" id="baziBirthdayGroup">
+          <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+          <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
+          <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+        </div>
+        <button class="btn btn-primary" id="btnBaziSubmit" data-action="get-bazi" style="margin-top:0.8rem;">
+          ☯️ 生成八字 · 中西合璧解读
+        </button>
+      </div>
+      <div id="baziResult" style="display:none; margin-top:1rem;"></div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="disclaimer">
+      本测试结果基于心理学模型，仅供参考。<br>
+      人格是复杂多维的，不应被单一类型完全定义。
+    </div>
+    
+    <!-- 分享海报模态框 -->
+    <div class="poster-modal" id="posterModal" style="display:none;">
+      <div class="poster-overlay" data-action="close-poster"></div>
+      <div class="poster-container">
+        <div class="poster-card poster-mbti" id="posterCard">
+          <div class="poster-header">
+            <div class="poster-logo">🔮 MBTI 性格测试</div>
+            <div class="poster-tagline">发现你的认知DNA</div>
+          </div>
+          <div class="poster-type-section">
+            <div class="poster-type-badge" id="posterType">ESTP</div>
+            <div class="poster-type-name" id="posterTypeName">企业家 · 促进者</div>
+          </div>
+          <div class="poster-dimensions" id="posterDimensions">
+            <!-- 动态插入维度条 -->
+          </div>
+          <div class="poster-cognitive" id="posterCognitive">
+            <!-- 动态插入认知功能 -->
+          </div>
+          <div class="poster-footer">
+            <div class="poster-qrcode">📱 扫码测测你的类型</div>
+            <div class="poster-brand">AI 心理学分析 · 基于荣格八维理论</div>
+          </div>
+        </div>
+        <div class="poster-actions">
+          <button class="btn btn-primary" data-action="download-poster">📥 保存海报</button>
+          <button class="btn btn-secondary" data-action="close-poster">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- #B2 生肖分享海报 -->
+    <div class="poster-modal" id="shengxiaoPosterModal" style="display:none;">
+      <div class="poster-overlay" data-action="close-shengxiao-poster"></div>
+      <div class="poster-container">
+        <div class="poster-card poster-sx" id="shengxiaoPosterCard">
+          <div class="poster-header">
+            <div class="poster-logo">🐲 生肖解读</div>
+            <div class="poster-tagline">西方星座 × 东方生肖</div>
+          </div>
+          <div class="poster-type-section">
+            <div class="poster-type-badge" id="shengxiaoPosterType">♈🐭</div>
+            <div class="poster-type-name" id="shengxiaoPosterName">白羊座 · 属鼠</div>
+          </div>
+          <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6; padding:0.5rem 0; text-align:center;" id="shengxiaoPosterKeywords">热情, 机敏, 抢先</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.5; margin-top:0.6rem;" id="shengxiaoPosterBody">4 段正文（爱情/事业/健康/今日提示）</div>
+          <div class="poster-footer">
+            <div class="poster-qrcode">📱 扫码看你的生肖解读</div>
+            <div class="poster-brand">十二生肖 · 144 种专属组合</div>
+          </div>
+        </div>
+        <div class="poster-actions">
+          <button class="btn btn-primary" data-action="download-shengxiao-poster">📥 保存海报</button>
+          <button class="btn btn-secondary" data-action="close-shengxiao-poster">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- #B2 塔罗分享海报 -->
+    <div class="poster-modal" id="tarotPosterModal" style="display:none;">
+      <div class="poster-overlay" data-action="close-tarot-poster"></div>
+      <div class="poster-container">
+        <div class="poster-card poster-tarot" id="tarotPosterCard">
+          <div class="poster-header">
+            <div class="poster-logo">🃏 塔罗牌占卜</div>
+            <div class="poster-tagline" id="tarotPosterSpread">Celtic Cross 十卡</div>
+          </div>
+          <div class="poster-type-section" id="tarotPosterCards">
+            <!-- 动态插入 1/3/6/7/10 张牌 -->
+          </div>
+          <div class="poster-footer">
+            <div class="poster-qrcode">📱 扫码体验你的塔罗</div>
+            <div class="poster-brand">塔罗牌 · 6 种牌阵 · 78 张牌</div>
+          </div>
+        </div>
+        <div class="poster-actions">
+          <button class="btn btn-primary" data-action="download-tarot-poster">📥 保存海报</button>
+          <button class="btn btn-secondary" data-action="close-tarot-poster">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ============ 星座每日运势 ============ -->
+  <div class="page" id="pageZodiac">
+    <div class="header" style="padding:1.5rem 0 1rem;">
+      <h1 style="font-size:1.6rem;">⭐ 星座每日运势</h1>
+      <div class="subtitle">输入生日，看你今天的爱情 / 事业 / 健康</div>
+    </div>
+
+    <!-- #25 #26：月亮过境 + 水逆提醒移到顶部（用户进 tab 立即看到，强回访钩子）-->
+    <div id="moonCard" class="moon-card-container"></div>
+
+    <div id="retrogradeBanner" class="retrograde-banner-container"></div>
+
+    <div id="coupleResult" style="display:none;"></div>
+
+    <!-- #27：今日/明日/本周 3 tab 切换 + #28 个人特质入口 -->
+    <div class="zodiac-period-tabs" style="display:flex; gap:0.3rem; margin-bottom:0.8rem; background:var(--bg-inner); padding:0.3rem; border-radius:0.5rem;">
+      <button class="period-tab active" data-period="today" style="flex:1; padding:0.6rem 0.4rem; border:none; background:var(--accent); color:white; border-radius:0.4rem; font-size:0.85rem; font-weight:500; cursor:pointer;">☀️ 今日</button>
+      <button class="period-tab" data-period="tomorrow" style="flex:1; padding:0.6rem 0.4rem; border:none; background:transparent; color:var(--text-secondary); border-radius:0.4rem; font-size:0.85rem; cursor:pointer;">🌅 明日</button>
+      <button class="period-tab" data-period="weekly" style="flex:1; padding:0.6rem 0.4rem; border:none; background:transparent; color:var(--text-secondary); border-radius:0.4rem; font-size:0.85rem; cursor:pointer;">📅 本周</button>
+    </div>
+
+    <div class="card" id="zodiacInputCard">
+      <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.6;">
+        输入出生信息，我们会算出你的本命星图（8 行星位置），给出针对性的运势解读。<br>
+        <span style="color:var(--accent);">⭐ 越详细越准</span>——城市/时间/时区可大幅提升解读精度。
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="birthday-selects" id="zodiacBirthdayGroup">
+        <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+        <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
+        <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">出生时间（可选，但能算出月亮星座和上升点）</label>
+      <input type="time" id="zodiacBirthTime" class="date-input" value="12:00" step="60" />
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">血型（可选，V2 用于"星座+血型"联合解读）</label>
+      <select id="zodiacBloodType" class="date-input">
+        <option value="">-- 不知道/不选 --</option>
+        <option value="A">A 型</option>
+        <option value="B">B 型</option>
+        <option value="AB">AB 型</option>
+        <option value="O">O 型</option>
+      </select>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">出生城市（用于定位经纬度）</label>
+      <input type="text" class="date-input city-search" id="zodiacCitySearch"
+             placeholder="🔍 输入城市名筛选（如深圳）" autocomplete="off" />
+      <select id="zodiacCity" class="date-input">
+        <option value="">-- 加载 348 城市... --</option>
+      </select>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">时区（默认北京时间）</label>
+      <select id="zodiacTimezone" class="date-input">
+        <option value="Asia/Shanghai" selected>北京时间 (UTC+8)</option>
+        <option value="Asia/Tokyo">东京时间 (UTC+9)</option>
+        <option value="Asia/Singapore">新加坡 (UTC+8)</option>
+        <option value="Asia/Kolkata">印度 (UTC+5:30)</option>
+        <option value="Europe/London">伦敦 (UTC+0)</option>
+        <option value="Europe/Paris">巴黎 (UTC+1)</option>
+        <option value="America/New_York">纽约 (UTC-5)</option>
+        <option value="America/Los_Angeles">洛杉矶 (UTC-8)</option>
+      </select>
+
+      <button class="btn btn-primary" id="btnZodiacSubmit" data-action="get-zodiac" style="margin-top:1.2rem;">
+        🔮 看看运势
+      </button>
+
+      <button class="btn btn-secondary" id="btnZodiacProfile" data-action="get-zodiac-profile" style="margin-top:0.6rem; background:linear-gradient(135deg, rgba(168,85,247,0.15), rgba(99,102,241,0.1)); border:1px solid rgba(168,85,247,0.3);">
+        📊 我的本命特质（独立于今日运势）
+      </button>
+
+      <!-- #2 MVP 配对模式 -->
+      <button class="btn btn-secondary" id="btnCoupleToggle" data-action="toggle-couple" style="margin-top:0.6rem; background:linear-gradient(135deg, rgba(236,72,153,0.15), rgba(219,39,119,0.1)); border:1px solid rgba(236,72,153,0.3);">
+        💞 配对模式（TA 的本命盘 vs 我）
+      </button>
+
+      <div id="coupleInputSection" style="display:none; margin-top:0.8rem; padding-top:0.8rem; border-top:1px dashed rgba(255,255,255,0.15);">
+        <div style="font-size:0.85rem; color:var(--accent-pink, #ec4899); font-weight:600; margin-bottom:0.5rem;">💞 TA 的出生信息</div>
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.2rem;">TA 的生日</label>
+        <div class="birthday-selects" id="coupleBirthdayGroup">
+          <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+          <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
+          <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+        </div>
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-top:0.5rem; margin-bottom:0.2rem;">TA 的出生时间（可选）</label>
+        <input type="time" id="coupleBirthTime" class="date-input" value="12:00" step="60" />
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-top:0.5rem; margin-bottom:0.2rem;">TA 的城市（用于定位经纬度）</label>
+        <input type="text" class="date-input city-search" id="coupleCitySearch"
+               placeholder="🔍 输入城市名筛选（如深圳）" autocomplete="off" />
+        <select id="coupleCity" class="date-input">
+          <option value="">-- 加载 348 城市... --</option>
+        </select>
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-top:0.5rem; margin-bottom:0.2rem;">TA 的时区</label>
+        <select id="coupleTimezone" class="date-input">
+          <option value="Asia/Shanghai" selected>北京时间 (UTC+8)</option>
+          <option value="Asia/Tokyo">东京时间 (UTC+9)</option>
+          <option value="Asia/Singapore">新加坡 (UTC+8)</option>
+          <option value="Asia/Kolkata">印度 (UTC+5:30)</option>
+          <option value="Europe/London">伦敦 (UTC+0)</option>
+          <option value="Europe/Paris">巴黎 (UTC+1)</option>
+          <option value="America/New_York">纽约 (UTC-5)</option>
+          <option value="America/Los_Angeles">洛杉矶 (UTC-8)</option>
+        </select>
+        <button class="btn btn-primary" id="btnCoupleSubmit" data-action="get-couple" style="margin-top:0.8rem;">
+          💞 配对分析（双本命盘）
+        </button>
+      </div>
+    </div>
+
+    <div id="zodiacResult" style="display:none;"></div>
+
+    <div class="disclaimer">
+      星座运势基于西方占星传统，结果仅供娱乐参考，请理性看待。
+    </div>
+  </div>
+
+  <!-- ============ 生肖 144 组合 ============ -->
+  <div class="page" id="pageShengxiao">
+    <div class="header" style="padding:1.5rem 0 1rem;">
+      <h1 style="font-size:1.6rem;">🐲 十二生肖解读</h1>
+      <div class="subtitle">输入生日，看你 12 星座 × 12 生肖 = 144 种组合的专属解读</div>
+    </div>
+
+    <div id="shengxiaoInputCard" class="input-card">
+      <div class="description" style="margin-bottom:0.8rem;">
+        生肖是中国传统命理，<strong>西方星座 × 东方生肖</strong>的交叉组合，让你看到不一样的自己。<br>
+        <span style="color:var(--accent);">⭐ 144 种组合</span>，每一种都是独家。
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="birthday-selects" id="shengxiaoBirthdayGroup">
+        <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+        <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
+        <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+      </div>
+
+      <!-- 可选：加星座（解锁 144 组合的另一半）-->
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">
+        你的太阳星座（可选，不填则只解读生肖单维度）
+      </label>
+      <select id="shengxiaoSign" class="date-input">
+        <option value="">-- 不知道/不选 --</option>
+        <option value="aries">白羊座 (03/21-04/19)</option>
+        <option value="taurus">金牛座 (04/20-05/20)</option>
+        <option value="gemini">双子座 (05/21-06/21)</option>
+        <option value="cancer">巨蟹座 (06/22-07/22)</option>
+        <option value="leo">狮子座 (07/23-08/22)</option>
+        <option value="virgo">处女座 (08/23-09/22)</option>
+        <option value="libra">天秤座 (09/23-10/23)</option>
+        <option value="scorpio">天蝎座 (10/24-11/22)</option>
+        <option value="sagittarius">射手座 (11/23-12/21)</option>
+        <option value="capricorn">摩羯座 (12/22-01/19)</option>
+        <option value="aquarius">水瓶座 (01/20-02/18)</option>
+        <option value="pisces">双鱼座 (02/19-03/20)</option>
+      </select>
+
+      <button class="btn btn-primary" id="btnShengxiaoSubmit" data-action="get-shengxiao" style="margin-top:1.2rem;">
+        🐲 查看生肖解读
+      </button>
+
+      <!-- V2 预埋：血型联合解读 -->
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">血型（V2 用于"生肖+血型"联合解读）</label>
+      <select id="shengxiaoBloodType" class="date-input">
+        <option value="">-- 不知道/不选 --</option>
+        <option value="A">A 型</option>
+        <option value="B">B 型</option>
+        <option value="AB">AB 型</option>
+        <option value="O">O 型</option>
+      </select>
+    </div>
+
+    <div id="shengxiaoResult" style="display:none;">
+      <div id="shengxiaoHeader" class="shengxiao-header"></div>
+      <div id="shengxiaoBody" class="description"></div>
+      <div id="shengxiaoAIResult" class="description" style="margin-top:1rem;"></div>
+      <button class="btn btn-primary" id="btnShengxiaoAI" data-action="get-shengxiao-ai" style="margin-top:1rem; display:none;">
+        🤖 AI 深度解读
+      </button>
+
+      <button class="btn btn-secondary" id="btnShengxiaoPoster" data-action="show-shengxiao-poster" style="margin-top:0.5rem; display:none;">
+        📤 生肖分享图
+      </button>
+    </div>
+
+    <div class="disclaimer">
+      生肖解读基于中国传统民俗，结果仅供娱乐参考，请理性看待。
+    </div>
+  </div>
+
+  <!-- ============ 塔罗占卜 ============ -->
+  <div class="page" id="pageTarot">
+    <div class="header" style="padding:1.5rem 0 1rem;">
+      <h1 style="font-size:1.6rem;">🃏 塔罗牌占卜</h1>
+      <div class="subtitle">心中默念你的问题，让塔罗为你揭示答案</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.8rem;">选择占卜方式</div>
+      <div class="version-card" data-tarot-mode="1">
+        <div class="version-icon">🎴</div>
+        <div class="version-info">
+          <div class="version-title">单卡抽取</div>
+          <div class="version-desc">3秒出结果 · 适合快速问询</div>
+        </div>
+        <div class="version-time">推荐</div>
+      </div>
+      <div class="version-card" data-tarot-mode="3">
+        <div class="version-icon">🃏🃏🃏</div>
+        <div class="version-info">
+          <div class="version-title">三卡阵 · 过去-现在-未来</div>
+          <div class="version-desc">深度解读 · 看清事态走向</div>
+        </div>
+        <div class="version-time">5分钟</div>
+      </div>
+      <div class="version-card" data-tarot-spread="celtic">
+        <div class="version-icon">🔯</div>
+        <div class="version-info">
+          <div class="version-title">Celtic Cross · 十卡阵</div>
+          <div class="version-desc">塔罗最经典占卜 · 10 张位置全面解读</div>
+        </div>
+        <div class="version-time">10分钟</div>
+      </div>
+      <div class="version-card" data-tarot-spread="horseshoe">
+        <div class="version-icon">🐴</div>
+        <div class="version-info">
+          <div class="version-title">马蹄阵 · 七卡决策</div>
+          <div class="version-desc">看清决策 7 维度 · 适合选择题</div>
+        </div>
+        <div class="version-time">7分钟</div>
+      </div>
+      <div class="version-card" data-tarot-spread="relationship">
+        <div class="version-icon">💞</div>
+        <div class="version-info">
+          <div class="version-title">关系阵 · 六卡</div>
+          <div class="version-desc">你/TA/关系/障碍/建议/未来</div>
+        </div>
+        <div class="version-time">6分钟</div>
+      </div>
+      <div class="version-card" data-tarot-spread="daily">
+        <div class="version-icon">☀️</div>
+        <div class="version-info">
+          <div class="version-title">每日一卡</div>
+          <div class="version-desc">每天固定一张 · 集 78 张牌</div>
+        </div>
+        <div class="version-time">1分钟</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.6rem;">你的问题（可选）</div>
+      <textarea id="tarotQuestion" class="text-input" rows="3"
+                placeholder="例：这段感情接下来会怎样？我该不该换工作？"></textarea>
+      <button class="btn btn-secondary" id="btnTarotSubmit" data-action="draw-tarot" style="margin-top:0.8rem; display:none;">
+        🎴 开始抽牌
+      </button>
+    </div>
+
+    <div id="tarotResult" style="display:none;"></div>
+
+    <!-- #G1 78 牌收集进度 -->
+    <div class="card" id="tarotCollectionCard" style="margin-top:1.5rem;">
+      <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.6rem;">📚 78 牌收集进度（每日一卡 + 单卡都可记录）</div>
+      <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.8rem;">
+        <div style="flex:1; height:14px; background:rgba(255,255,255,0.1); border-radius:7px; overflow:hidden; position:relative;">
+          <div id="tarotCollectionBar" style="width:0%; height:100%; background:linear-gradient(90deg, #c9a84c, #f4d03f); border-radius:7px; transition:width 0.6s ease; font-size:0.7rem; color:#1a1612; text-align:center; line-height:14px; font-weight:600;"></div>
+        </div>
+        <div id="tarotCollectionCount" style="font-size:0.85rem; color:var(--text-secondary); min-width:80px; text-align:right;">0 / 78</div>
+      </div>
+      <div id="tarotCollectionBadge" style="display:none; background:linear-gradient(135deg, rgba(201,168,76,0.3), rgba(244,208,63,0.2)); border:1px solid var(--accent-gold); border-radius:0.5rem; padding:0.8rem; margin-bottom:0.8rem; color:var(--accent-gold); font-weight:600; text-align:center;"></div>
+      <div id="tarotCollectionGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:0.4rem;"></div>
+    </div>
+
+    <div class="disclaimer">
+      塔罗牌基于西方神秘学传统，结果仅供启发思考和自我觉察，不构成决策建议。
+    </div>
+  </div>
+
+</div>
+
+<!-- 加载题库和引擎 -->
+<!-- #3 修：136KB knowledge + 题库加 defer 并行下载，不阻塞首屏解析；app.js / config.js 主入口保留同步 -->
+<!-- #33：60/28 题版本都从 MBTI_QUESTION_BANK_200（200 题）随机抽 -->
+<script defer src="questions/mbti-question-bank-200.js"></script>
+<!-- #39：40/20 题版本扩到 90/50 题（likert-90 = 40 老 + 50 新；scenario-50 = 20 老 + 30 新） -->
+<script defer src="questions/mbti-likert-90.js"></script>
+<script defer src="questions/mbti-scenario-50.js"></script>
+<script defer src="engine/mbti-scorer-multi.js"></script>
+<script src="js/loader.js"></script>          <!-- 知识库加载器（按需 .json + IndexedDB 缓存），必须同步：app.js 末尾调 loadAllData 预加载 -->
+<script src="knowledge/astro-engine.js"></script>     <!-- 顾总 V1.0 算法库（#9 集成，挂在 window.ASTRO_ENGINE）—— 必须同步：app.js 末尾调 renderMoonCard / renderRetrogradeBanner 依赖 -->
+<script src="knowledge/astro-knowledge.js"></script>     <!-- 占星解读知识库（V1.0，8 行星 + 12 星座 + 6 相位）—— 必须同步：app.js 用 window.ASTRO_KNOWLEDGE 查解读 -->
+<!-- #15 修：补引 zodiac-knowledge.js（app.js line 1410 用 window.ZODIAC_KNOWLEDGE，41KB 5 维度结构化数据）—— 必须同步 -->
+<script src="knowledge/zodiac-knowledge.js"></script>     <!-- 顾总 V1.0 解读知识库（ZODIAC_KNOWLEDGE，5 维度结构化数据） -->
+
+<!-- #H2 塔罗+八字 cross：八字计算用 src/js/bazi.js（自写简化版 0 依赖）-->
+<script src="js/bazi.js"></script>
+<script src="js/config.js"></script>          <!-- 内部 API key（gitignored），必须同步（app.js 启动读）-->
+<script src="js/app.js"></script>             <!-- 主入口必须同步 -->
+
+<!-- #40 E1：历史抽屉（fixed 右上角，浮层） -->
+<div id="historyDrawer" style="display:none; position:fixed; top:0; right:0; bottom:0; width:90%; max-width:380px; background:var(--bg-primary); border-left:1px solid rgba(201,168,76,0.4); z-index:200; flex-direction:column; box-shadow:-4px 0 16px rgba(0,0,0,0.5);">
+  <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+    <div style="font-size:1rem; font-weight:600; color:var(--accent-gold);">📚 我的历史</div>
+    <button id="btnHistoryClose" style="background:transparent; color:var(--text-secondary); border:none; font-size:1.4rem; cursor:pointer;">×</button>
+  </div>
+  <div id="historyList" style="flex:1; overflow-y:auto;"></div>
+  <div id="historyEmpty" style="display:none; text-align:center; padding:3rem 1rem; color:var(--text-muted); font-size:0.9rem;">
+    还没有测试记录<br>完成任意测试后会自动保存到这里
+  </div>
+</div>
+
+</body>
+</html>

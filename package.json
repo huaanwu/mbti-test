@@ -1,0 +1,22 @@
+{
+  "name": "mbti-personality-test",
+  "version": "2.1.0",
+  "description": "MBTI性格测试应用",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "android": "npx cap sync android",
+    "cap:init": "npx cap init MBTI性格测试 com.mbti.personality --web-dir=www"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/splash-screen": "^5.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

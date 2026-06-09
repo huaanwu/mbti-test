@@ -1,0 +1,98 @@
+[
+  {
+    "id": "aries",
+    "nameCn": "白羊座",
+    "nameEn": "Aries",
+    "symbol": "♈",
+    "dateRange": "03-21 ~ 04-19",
+    "file": "zodiac/aries.md"
+  },
+  {
+    "id": "taurus",
+    "nameCn": "金牛座",
+    "nameEn": "Taurus",
+    "symbol": "♉",
+    "dateRange": "04-20 ~ 05-20",
+    "file": "zodiac/taurus.md"
+  },
+  {
+    "id": "gemini",
+    "nameCn": "双子座",
+    "nameEn": "Gemini",
+    "symbol": "♊",
+    "dateRange": "05-21 ~ 06-21",
+    "file": "zodiac/gemini.md"
+  },
+  {
+    "id": "cancer",
+    "nameCn": "巨蟹座",
+    "nameEn": "Cancer",
+    "symbol": "♋",
+    "dateRange": "06-22 ~ 07-22",
+    "file": "zodiac/cancer.md"
+  },
+  {
+    "id": "leo",
+    "nameCn": "狮子座",
+    "nameEn": "Leo",
+    "symbol": "♌",
+    "dateRange": "07-23 ~ 08-22",
+    "file": "zodiac/leo.md"
+  },
+  {
+    "id": "virgo",
+    "nameCn": "处女座",
+    "nameEn": "Virgo",
+    "symbol": "♍",
+    "dateRange": "08-23 ~ 09-22",
+    "file": "zodiac/virgo.md"
+  },
+  {
+    "id": "libra",
+    "nameCn": "天秤座",
+    "nameEn": "Libra",
+    "symbol": "♎",
+    "dateRange": "09-23 ~ 10-23",
+    "file": "zodiac/libra.md"
+  },
+  {
+    "id": "scorpio",
+    "nameCn": "天蝎座",
+    "nameEn": "Scorpio",
+    "symbol": "♏",
+    "dateRange": "10-24 ~ 11-22",
+    "file": "zodiac/scorpio.md"
+  },
+  {
+    "id": "sagittarius",
+    "nameCn": "射手座",
+    "nameEn": "Sagittarius",
+    "symbol": "♐",
+    "dateRange": "11-23 ~ 12-21",
+    "file": "zodiac/sagittarius.md"
+  },
+  {
+    "id": "capricorn",
+    "nameCn": "摩羯座",
+    "nameEn": "Capricorn",
+    "symbol": "♑",
+    "dateRange": "12-22 ~ 01-19",
+    "file": "zodiac/capricorn.md"
+  },
+  {
+    "id": "aquarius",
+    "nameCn": "水瓶座",
+    "nameEn": "Aquarius",
+    "symbol": "♒",
+    "dateRange": "01-20 ~ 02-18",
+    "file": "zodiac/aquarius.md"
+  },
+  {
+    "id": "pisces",
+    "nameCn": "双鱼座",
+    "nameEn": "Pisces",
+    "symbol": "♓",
+    "dateRange": "02-19 ~ 03-20",
+    "file": "zodiac/pisces.md"
+  }
+]
