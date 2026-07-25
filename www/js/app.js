@@ -1107,7 +1107,7 @@ function getLLMConfig() {
     if (raw) return JSON.parse(raw);
   } catch (e) { /* ignore */ }
   return {
-    active: 'cloud',           // 'local' | 'cloud'
+    active: 'local',           // 'local' | 'cloud' —— 默认本地优先
     local: {
       address: '',              // http://192.168.x.x:8082
       modelName: 'qwen2.5-7b', // 默认兼容 Ollama / vLLM
@@ -1128,6 +1128,7 @@ function saveLLMConfig(cfg) {
 /** 返回当前激活的 { apiUrl, apiKey, modelName } */
 function getActiveEndpoint() {
   const cfg = getLLMConfig();
+  // 本地模式优先：需要有配置的地址
   if (cfg.active === 'local' && cfg.local.address) {
     return {
       apiUrl: cfg.local.address.replace(/\/$/, '') + '/v1/chat/completions',
@@ -1135,11 +1136,11 @@ function getActiveEndpoint() {
       modelName: cfg.local.modelName || 'qwen2.5-7b',
     };
   }
-  // cloud / fallback
+  // cloud / fallback：本地没地址时自动用云端
   const c = cfg.cloud;
   // API Key 来源：LLM_CONFIG 云配置 > localStorage mbti_api_key > config.js
   const key = c.apiKey || localStorage.getItem('mbti_api_key')
-    || (window.MBTI_CONFIG?.deepseekApiKey?.startsWith('sk-') ? window.MBTI_CONFIG.deepseekApiKey : null) || '';
+    || (typeof window.MBTI_CONFIG?.deepseekApiKey === 'string' && window.MBTI_CONFIG.deepseekApiKey.startsWith('sk-') ? window.MBTI_CONFIG.deepseekApiKey : null) || '';
   return {
     apiUrl: c.apiUrl || 'https://api.deepseek.com/v1/chat/completions',
     apiKey: key,
