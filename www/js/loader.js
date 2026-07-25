@@ -31,7 +31,8 @@
     error: null,
     zodiac: [],
     tarotMajor: [],
-    tarotMinor: []
+    tarotMinor: [],
+    numerology: null
   };
   window.MBTI_DATA = MBTI_DATA;
 
@@ -94,7 +95,7 @@
 
   async function loadWithCache(key, url) {
     // 1. 内存缓存
-    if (MBTI_DATA[key] && MBTI_DATA[key].length > 0) {
+    if (MBTI_DATA[key]) {
       return MBTI_DATA[key];
     }
     // 2. IndexedDB 缓存
@@ -133,6 +134,10 @@
   }
   window.loadShengxiao = loadShengxiao;
 
+  async function loadNumerology() {
+    return loadWithCache('numerology', `${DATA_BASE}/numerology.json`);
+  }
+  window.loadNumerology = loadNumerology;
   // 兼容旧 API：一次性加载全部（星座+塔罗大+塔罗小）
   async function loadAllData() {
     if (MBTI_DATA.ready) return MBTI_DATA;
@@ -143,6 +148,7 @@
     MBTI_DATA.loading = true;
     try {
       await Promise.all([loadZodiac(), loadTarotMajor(), loadTarotMinor(), loadShengxiao()]);
+      await loadNumerology();
       // 兼容旧格式：tarot = major + minor
       MBTI_DATA.tarot = [...MBTI_DATA.tarotMajor, ...MBTI_DATA.tarotMinor];
       MBTI_DATA.ready = true;
@@ -187,4 +193,12 @@
     return r ? getZodiac(r[4]) : null;
   }
   window.getZodiacByDate = getZodiacByDate;
+
+  // ========== 生命灵数 便捷查询 ==========
+  function getNumerology(value) {
+    if (!MBTI_DATA.numerology) return null;
+    const v = String(value);
+    return MBTI_DATA.numerology.numbers?.[v] || null;
+  }
+  window.getNumerology = getNumerology;
 })();

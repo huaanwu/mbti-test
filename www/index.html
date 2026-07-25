@@ -52,6 +52,14 @@
       <span class="module-tab-icon">🃏</span>
       <span class="module-tab-label">塔罗</span>
     </button>
+    <button class="module-tab" data-tab="astrology">
+      <span class="module-tab-icon">🌌</span>
+      <span class="module-tab-label">占星</span>
+    </button>
+    <button class="module-tab" data-tab="numerology">
+      <span class="module-tab-icon">🔢</span>
+      <span class="module-tab-label">灵数</span>
+    </button>
   </nav>
 
   <!-- ============ 首页 ============ -->
@@ -665,6 +673,89 @@
 
     <div class="disclaimer">
       塔罗牌基于西方神秘学传统，结果仅供启发思考和自我觉察，不构成决策建议。
+    </div>
+  </div>
+
+  <!-- ============ 占星 · 本命盘深度解读 ============ -->
+  <div class="page" id="pageAstrology">
+    <div class="header" style="padding:1.5rem 0 1rem;">
+      <h1 style="font-size:1.6rem;">🌌 占星 · 本命盘</h1>
+      <div class="subtitle">太阳/月亮/上升 + 8 行星落座 + 元素模式 + 主要相位</div>
+    </div>
+
+    <div class="card" id="astrologyInputCard">
+      <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.6;">
+        输入出生信息,我们算出你的完整本命盘(8 行星落座 + 上升 + 主要相位 + 元素/模式分布)。<br>
+        <span style="color:var(--accent);">⭐ 越详细越准</span>——城市/时间/时区可大幅提升精度。
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="birthday-selects" id="astrologyBirthdayGroup">
+        <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+        <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
+        <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">出生时间(可选,但能算出月亮+上升)</label>
+      <input type="time" id="astrologyBirthTime" class="date-input" value="12:00" step="60" />
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">出生城市(用于定位经纬度)</label>
+      <input type="text" class="date-input city-search" id="astrologyCitySearch"
+             placeholder="🔍 输入城市名筛选" autocomplete="off" />
+      <select id="astrologyCity" class="date-input">
+        <option value="">-- 加载 348 城市... --</option>
+      </select>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-top:0.8rem; margin-bottom:0.4rem;">时区</label>
+      <select id="astrologyTimezone" class="date-input">
+        <option value="Asia/Shanghai" selected>北京时间 (UTC+8)</option>
+        <option value="Asia/Tokyo">东京 (UTC+9)</option>
+        <option value="Europe/London">伦敦 (UTC+0)</option>
+        <option value="America/New_York">纽约 (UTC-5)</option>
+        <option value="America/Los_Angeles">洛杉矶 (UTC-8)</option>
+      </select>
+
+      <button class="btn btn-primary" id="btnAstrologySubmit" data-action="get-astrology" style="margin-top:1.2rem;">
+        🌌 计算本命盘
+      </button>
+    </div>
+
+    <div id="astrologyResult" style="display:none;"></div>
+
+    <div class="disclaimer">
+      占星基于西方传统,结果仅供自我探索参考,请理性看待。
+    </div>
+  </div>
+
+  <!-- ============ 生命灵数 · 数字命理 ============ -->
+  <div class="page" id="pageNumerology">
+    <div class="header" style="padding:1.5rem 0 1rem;">
+      <h1 style="font-size:1.6rem;">🔢 生命灵数</h1>
+      <div class="subtitle">生命数字 + 生日数字 + 态度/成熟数字 + 个人年</div>
+    </div>
+
+    <div class="card" id="numerologyInputCard">
+      <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.6;">
+        输入生日,我们算出你的<strong>生命灵数矩阵</strong>:生命数字(主命)、生日数字、态度数字、成熟数字、个人年/月。<br>
+        <span style="color:var(--accent);">⭐ 大师数 11/22/33 会特别标注</span>,有更高的灵性能量。
+      </div>
+
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="birthday-selects" id="numerologyBirthdayGroup">
+        <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+        <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
+        <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+      </div>
+
+      <button class="btn btn-primary" id="btnNumerologySubmit" data-action="get-numerology" style="margin-top:1.2rem;">
+        🔢 计算生命灵数
+      </button>
+    </div>
+
+    <div id="numerologyResult" style="display:none;"></div>
+
+    <div class="disclaimer">
+      生命灵数基于西方 Pythagorean 数字命理传统,结果仅供自我探索参考。
     </div>
   </div>
 

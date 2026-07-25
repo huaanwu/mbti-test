@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 占星解读知识库 V1.0 - 配合顾总 astro-engine.js
  * 版本: 1.0
  * 用途: AI prompt 注入 + 前端展示
@@ -336,3 +336,30 @@ function signEnToCn(signEn) {
 }
 
 window.ASTRO_KNOWLEDGE = ASTRO_KNOWLEDGE;
+
+
+// ========== 水星 x 12 ==========
+ASTRO_KNOWLEDGE.mercuryInSigns = { aries:{kw:'思维尖锐直率',r:'说话快、反应快、容易先说再想'}, taurus:{kw:'思维稳健缓慢',r:'慢热但深刻、务实有条理'}, gemini:{kw:'思维跳跃流畅',r:'点子多、学习快、多任务'}, cancer:{kw:'思维感性委婉',r:'重情感、轻逻辑、擅听言外之意'}, leo:{kw:'思维戏剧有感染力',r:'讲话有说服力、爱被关注'}, virgo:{kw:'思维精密准确',r:'逻辑严密、细节满分'}, libra:{kw:'思维平衡优雅',r:'擅换位思考、调解分歧'}, scorpio:{kw:'思维深刻有力',r:'能看穿表象、审讯式提问'}, sagittarius:{kw:'思维宏观直白',r:'视野宏大、爱讲大道理'}, capricorn:{kw:'思维严肃务实',r:'逻辑严密、目标导向'}, aquarius:{kw:'思维前卫独特',r:'点子古怪、表达不拘一格'}, pisces:{kw:'思维梦幻诗意',r:'直觉强、想象力丰富'} };
+
+// ========== 金星 x 12 ==========
+ASTRO_KNOWLEDGE.venusInSigns = { aries:{kw:'爱得猛烈审美前卫',r:'追求刺激新鲜、冲击力'}, taurus:{kw:'爱得稳定审美精致',r:'持久忠诚、物质安全感'}, gemini:{kw:'爱得轻盈审美多元',r:'喜欢有趣聪明、什么都想试'}, cancer:{kw:'爱得深沉审美怀旧',r:'深情依赖、温馨复古'}, leo:{kw:'爱得浪漫审美华丽',r:'要崇拜、爱奢侈品、女王范'}, virgo:{kw:'爱得理性审美简约',r:'挑剔、干净实用'}, libra:{kw:'爱得浪漫审美高雅',r:'追求美感平衡、时尚设计'}, scorpio:{kw:'爱得炽烈审美神秘',r:'占有欲强、深沉暗黑'}, sagittarius:{kw:'爱得自由审美异域',r:'要自由、独立博学复古'}, capricorn:{kw:'爱得稳重审美经典',r:'务实长期、稳重有档次'}, aquarius:{kw:'爱得独立审美前卫',r:'要空间、独立个性'}, pisces:{kw:'爱得梦幻审美浪漫',r:'为爱痴狂、诗意梦幻'} };
+
+// ========== 火星 x 12 ==========
+ASTRO_KNOWLEDGE.marsInSigns = { aries:{kw:'行动果断欲望直接',r:'想到就做、直接冲动'}, taurus:{kw:'行动稳健欲望持久',r:'慢但稳、不轻易放弃'}, gemini:{kw:'行动机敏欲望多变',r:'靠嘴、好奇心强'}, cancer:{kw:'行动防御欲望内敛',r:'被动但被激怒极具攻击性'}, leo:{kw:'行动有戏欲望表现',r:'自带光环、爱出风头'}, virgo:{kw:'行动精细欲望服务',r:'细致按部就班、服务他人'}, libra:{kw:'行动平衡欲望和谐',r:'犹豫、考虑所有人感受'}, scorpio:{kw:'行动深邃欲望强烈',r:'隐秘有力、暗中布局'}, sagittarius:{kw:'行动自由欲望冒险',r:'闲不住、需广阔空间'}, capricorn:{kw:'行动务实欲望成就',r:'有计划有耐心、持久战'}, aquarius:{kw:'行动前卫欲望革命',r:'出人意料、打破规则'}, pisces:{kw:'行动梦幻欲望灵性',r:'靠直觉、灵感爆发'} };
+
+// ========== 木星 x 12 ==========
+ASTRO_KNOWLEDGE.jupiterInSigns = { aries:{kw:'开创中扩张',r:'幸运来自第一个做'}, taurus:{kw:'物质中扩张',r:'稳步积累、长期投资'}, gemini:{kw:'学习中扩张',r:'学得广说得多'}, cancer:{kw:'家庭中扩张',r:'家人与根基、房地产'}, leo:{kw:'创造中扩张',r:'被看见、舞台娱乐'}, virgo:{kw:'服务中扩张',r:'小事做到极致、医疗'}, libra:{kw:'关系中扩张',r:'合作与平衡、外交'}, scorpio:{kw:'转化中扩张',r:'直面深渊、心理学'}, sagittarius:{kw:'远方中扩张',r:'远方与博学、教育出版'}, capricorn:{kw:'成就中扩张',r:'长期规划、企业管理'}, aquarius:{kw:'社群中扩张',r:'同频链接、科技'}, pisces:{kw:'灵性中扩张',r:'慈悲与直觉、艺术'} };
+
+// ========== 土星 x 12 ==========
+ASTRO_KNOWLEDGE.saturnInSigns = { aries:{kw:'考验自我主张',r:'敢不敢为自己发声'}, taurus:{kw:'考验物质安全感',r:'金钱与价值观'}, gemini:{kw:'考验沟通与思维',r:'学得够不够深'}, cancer:{kw:'考验情感与家庭',r:'独立于原生家庭'}, leo:{kw:'考验创造力',r:'不带骄傲展示自己'}, virgo:{kw:'考验完美与服务',r:'接受不完美'}, libra:{kw:'考验关系与平衡',r:'坚持自我不讨好'}, scorpio:{kw:'考验信任与转化',r:'穿越控制与背叛'}, sagittarius:{kw:'考验信念与远见',r:'信仰活在当下'}, capricorn:{kw:'考验责任与成就',r:'承担大任、长期主义'}, aquarius:{kw:'考验个体与群体',r:'群体中保持自我'}, pisces:{kw:'考验灵性与边界',r:'落地灵性洞见'} };
+
+// ========== 上升 x 12 ==========
+ASTRO_KNOWLEDGE.ascInSigns = { aries:{kw:'锐利进取第一印象',r:'冲锋、直、熟悉后温柔'}, taurus:{kw:'稳重优雅第一印象',r:'沉稳可信、熟悉后固执'}, gemini:{kw:'机灵多变第一印象',r:'好奇聪明、熟悉后善变'}, cancer:{kw:'温柔内敛第一印象',r:'温和好相处、熟悉后敏感'}, leo:{kw:'耀眼自信第一印象',r:'有魅力、熟悉后脆弱'}, virgo:{kw:'清爽严谨第一印象',r:'整洁挑剔、熟悉后善良'}, libra:{kw:'优雅和谐第一印象',r:'美感、好人、熟悉后犹豫'}, scorpio:{kw:'神秘深邃第一印象',r:'距离感、有故事、熟悉后忠诚'}, sagittarius:{kw:'自由爽朗第一印象',r:'乐观不靠谱、熟悉后智慧'}, capricorn:{kw:'成熟稳重第一印象',r:'老成冷、熟悉后幽默'}, aquarius:{kw:'特立独行第一印象',r:'古怪难接近、熟悉后热情'}, pisces:{kw:'梦幻温柔第一印象',r:'迷离迷糊、熟悉后智慧'} };
+
+ASTRO_KNOWLEDGE.elementMap = { aries:'fire',leo:'fire',sagittarius:'fire', taurus:'earth',virgo:'earth',capricorn:'earth', gemini:'air',libra:'air',aquarius:'air', cancer:'water',scorpio:'water',pisces:'water' };
+ASTRO_KNOWLEDGE.elementNameCn = { fire:'火', earth:'土', air:'风', water:'水' };
+ASTRO_KNOWLEDGE.modalityMap = { aries:'cardinal',cancer:'cardinal',libra:'cardinal',capricorn:'cardinal', taurus:'fixed',leo:'fixed',scorpio:'fixed',aquarius:'fixed', gemini:'mutable',virgo:'mutable',sagittarius:'mutable',pisces:'mutable' };
+ASTRO_KNOWLEDGE.modalityNameCn = { cardinal:'本位', fixed:'固定', mutable:'变动' };
+ASTRO_KNOWLEDGE.signShort = { aries:'♈',taurus:'♉',gemini:'♊',cancer:'♋',leo:'♌',virgo:'♍',libra:'♎',scorpio:'♏',sagittarius:'♐',capricorn:'♑',aquarius:'♒',pisces:'♓' };
+
+if (typeof window !== 'undefined') { window.ASTRO_KNOWLEDGE = ASTRO_KNOWLEDGE; }

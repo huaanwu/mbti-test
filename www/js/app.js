@@ -33,6 +33,10 @@ const state = {
   zodiacPeriod: 'today',
   // #2 配对：TA 的本命盘（chart）
   coupleChart: null,
+  // 占星本命盘（由 getAstrologyNatalProfile 计算）
+  astrologyProfile: null,
+  // 生命灵数（由 getNumerologyProfile 计算）
+  numerologyProfile: null,
   // API key 输入流程：showApiKeyInput 渲染到当前 outputEl，保存后回调 onSaved
   _pendingKeyOutputEl: null,
   _pendingKeyHandler: null,
@@ -1802,6 +1806,10 @@ function switchAppTab(tab) {
     targetPage = 'pageZodiac';
   } else if (tab === 'shengxiao') {
     targetPage = 'pageShengxiao';
+  } else if (tab === 'astrology') {
+    targetPage = 'pageAstrology';
+  } else if (tab === 'numerology') {
+    targetPage = 'pageNumerology';
   } else {
     targetPage = 'pageTarot';
     // #G1：切到塔罗 tab 刷新 78 牌收集 UI
@@ -1844,6 +1852,22 @@ function switchAppTab(tab) {
     }
   } else if (tab === 'tarot') {
     document.getElementById('tarotResult').style.display = 'none';
+  } else if (tab === 'astrology') {
+    document.getElementById('astrologyResult').style.display = 'none';
+    document.getElementById('astrologyInputCard').style.display = 'block';
+    initBirthdaySelects('astrologyBirthdayGroup');
+    // 复用 mbti_user_profile 自动回填
+    const ap = (() => { try { return JSON.parse(localStorage.getItem('mbti_user_profile') || 'null'); } catch (e) { return null; } })();
+    if (ap?.birthday) setBirthday('astrologyBirthdayGroup', ap.birthday);
+    if (ap?.birthTime) document.getElementById('astrologyBirthTime').value = ap.birthTime;
+    if (ap?.timezone) document.getElementById('astrologyTimezone').value = ap.timezone;
+    if (ap?.city?.id) { const sel = document.getElementById('astrologyCity'); if (sel) sel.value = ap.city.id; }
+  } else if (tab === 'numerology') {
+    document.getElementById('numerologyResult').style.display = 'none';
+    document.getElementById('numerologyInputCard').style.display = 'block';
+    initBirthdaySelects('numerologyBirthdayGroup');
+    const np = (() => { try { return JSON.parse(localStorage.getItem('mbti_user_profile') || 'null'); } catch (e) { return null; } })();
+    if (np?.birthday) setBirthday('numerologyBirthdayGroup', np.birthday);
   }
 }
 
@@ -2849,6 +2873,12 @@ function initEventBindings() {
   // 星座提交
   const zodiacBtn = document.getElementById('btnZodiacSubmit');
   if (zodiacBtn) zodiacBtn.addEventListener('click', getZodiacReading);
+  // 占星提交
+  const astroBtn = document.getElementById('btnAstrologySubmit');
+  if (astroBtn) astroBtn.addEventListener('click', getAstrologyNatalProfile);
+  // 灵数提交
+  const numBtn = document.getElementById('btnNumerologySubmit');
+  if (numBtn) numBtn.addEventListener('click', getNumerologyProfile);
   // #27：今日/明日/本周 tab 切换
   document.querySelectorAll('.period-tab').forEach(btn => {
     btn.addEventListener('click', () => switchZodiacPeriod(btn.dataset.period, btn));
@@ -3783,3 +3813,355 @@ function toggleHistoryDrawer() {
 
 // 启动时初始化抽屉（虽然默认隐藏，但 renderHistoryDrawer 要先调一次以注册事件）
 renderHistoryDrawer();
+
+// ==================== 占星 · 本命盘深度解读（V1.0）====================
+
+/**
+ * 数字归约:Pythagorean 系统
+ * 累加所有数字;若中间结果为 11/22/33(大师数) 保留;否则继续降到 1-9
+ */
+function reduceDigits(num, allowMaster = true) {
+  let n = num;
+  const trace = [n];
+  while (n >= 10) {
+    if (allowMaster && (n === 11 || n === 22 || n === 33)) { trace.push(n); return { value: n, isMaster: true, trace }; }
+    let sum = 0;
+    while (n > 0) { sum += n % 10; n = Math.floor(n / 10); }
+    n = sum;
+    trace.push(n);
+  }
+  return { value: n, isMaster: false, trace };
+}
+
+/**
+ * 生命数字(Life Path Number):年月日所有数字累加
+ * 例:1990-05-15 → 1+9+9+0+0+5+1+5 = 30 → 3+0 = 3
+ */
+function calcLifePathNumber(y, m, d) {
+  let all = 0;
+  const digits = String(y).split('').concat(String(m).split(''), String(d).split(''));
+  for (const c of digits) all += Number(c);
+  return reduceDigits(all, true);
+}
+
+/**
+ * 生日数字(Birthday Number):只取日
+ * 例:15 → 1+5 = 6
+ */
+function calcBirthdayNumber(d) {
+  return reduceDigits(Number(d), true);
+}
+
+/**
+ * 态度数字(Attitude Number):月+日
+ */
+function calcAttitudeNumber(m, d) {
+  return reduceDigits(Number(m) + Number(d), true);
+}
+
+/**
+ * 成熟数字(Maturity Number):生命数字 + 生日数字(归约)
+ */
+function calcMaturityNumber(lifeValue, bdayValue) {
+  return reduceDigits(Number(lifeValue) + Number(bdayValue), true);
+}
+
+/**
+ * 个人年(Personal Year):当年 + 生日月 + 生日日
+ */
+function calcPersonalYear(bMonth, bDay, currentYear) {
+  return reduceDigits(Number(currentYear) + Number(bMonth) + Number(bDay), true);
+}
+
+/**
+ * 个人月(Personal Month):个人年 + 当前月
+ */
+function calcPersonalMonth(personalYearValue, currentMonth) {
+  return reduceDigits(Number(personalYearValue) + Number(currentMonth), true);
+}
+
+/**
+ * 取城市经纬度(复用 cities.json,与 zodiac 一致)
+ */
+function findCityLatLng(cityId) {
+  const sel = document.getElementById('astrologyCity');
+  if (!sel || !cityId) return null;
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt) return null;
+  const lat = parseFloat(opt.dataset.lat);
+  const lng = parseFloat(opt.dataset.lng);
+  if (isNaN(lat) || isNaN(lng)) return null;
+  return { lat, lng, name: opt.dataset.name || opt.textContent };
+}
+
+/**
+ * 主入口:占星本命盘深度解读
+ */
+async function getAstrologyNatalProfile() {
+  const birthday = getBirthday('astrologyBirthdayGroup');
+  if (!birthday) { alert('请先填写生日'); return; }
+  const [y, mo, da] = birthday.split('-').map(Number);
+  const timeStr = document.getElementById('astrologyBirthTime').value || '12:00';
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const cityId = document.getElementById('astrologyCity').value;
+  const city = findCityLatLng(cityId);
+  const lat = city?.lat ?? 39.9;
+  const lng = city?.lng ?? 116.4;
+
+  // 保存到 mbti_user_profile(同步到其它模块)
+  try {
+    const profileStr = localStorage.getItem('mbti_user_profile');
+    const profile = profileStr ? JSON.parse(profileStr) : {};
+    profile.birthday = birthday;
+    profile.birthTime = timeStr;
+    profile.timezone = document.getElementById('astrologyTimezone').value || 'Asia/Shanghai';
+    if (city) profile.city = { id: cityId, name: city.name, lat: city.lat, lon: city.lng };
+    localStorage.setItem('mbti_user_profile', JSON.stringify(profile));
+  } catch (e) { /* 损坏静默 */ }
+
+  let chart = null;
+  try {
+    if (window.ASTRO_ENGINE?.generateNatalChart) {
+      chart = window.ASTRO_ENGINE.generateNatalChart(y, mo, da, hh, mm, lat, lng);
+    }
+  } catch (e) { console.error('generateNatalChart 失败:', e); }
+
+  if (!chart) { alert('本命盘计算失败'); return; }
+  state.astrologyProfile = chart;
+  document.getElementById('astrologyInputCard').style.display = 'none';
+  document.getElementById('astrologyResult').style.display = 'block';
+  renderNatalChart(chart, y, mo, da);
+  document.getElementById('astrologyResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * 渲染本命盘:核心 3 位(太阳/月亮/上升) + 5 行星 + 元素/模式 + 主要相位
+ */
+function renderNatalChart(chart, y, mo, da) {
+  const AK = window.ASTRO_KNOWLEDGE || {};
+  const planetDefs = [
+    { key: 'sun', icon: '☉', cn: '太阳', domain: '核心自我' },
+    { key: 'moon', icon: '☽', cn: '月亮', domain: '情感本能' },
+    { key: 'mercury', icon: '☿', cn: '水星', domain: '思维沟通' },
+    { key: 'venus', icon: '♀', cn: '金星', domain: '爱情审美' },
+    { key: 'mars', icon: '♂', cn: '火星', domain: '行动欲望' },
+    { key: 'jupiter', icon: '♃', cn: '木星', domain: '成长幸运' },
+    { key: 'saturn', icon: '♄', cn: '土星', domain: '责任考验' }
+  ];
+
+  const getPlanetData = (key) => key === 'sun' || key === 'moon' ? chart[key] : chart.planets?.[key];
+  const getSignReading = (planetKey, signId) => {
+    const map = { mercury: AK.mercuryInSigns, venus: AK.venusInSigns, mars: AK.marsInSigns, jupiter: AK.jupiterInSigns, saturn: AK.saturnInSigns };
+    if (planetKey === 'sun') return AK.sunInSigns?.[signId];
+    if (planetKey === 'moon') return AK.moonInSigns?.[signId];
+    return map[planetKey]?.[signId];
+  };
+
+  // 元素/模式统计
+  const elemCount = { fire: 0, earth: 0, air: 0, water: 0 };
+  const modCount = { cardinal: 0, fixed: 0, mutable: 0 };
+  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name].filter(Boolean);
+  for (const sid of allSigns) {
+    const e = AK.elementMap?.[sid]; if (e) elemCount[e]++;
+    const m = AK.modalityMap?.[sid]; if (m) modCount[m]++;
+  }
+  const total = allSigns.length || 1;
+  const elemHtml = ['fire', 'earth', 'air', 'water'].map(k => {
+    const pct = Math.round(elemCount[k] / total * 100);
+    const cn = AK.elementNameCn?.[k] || k;
+    return `<div style="flex:1; text-align:center;"><div style="font-size:0.8rem; color:var(--text-secondary);">${cn}</div><div style="font-size:1.1rem; font-weight:600; color:var(--accent-gold);">${elemCount[k]}/${total}</div><div style="font-size:0.7rem; color:var(--text-muted);">${pct}%</div></div>`;
+  }).join('');
+  const modHtml = ['cardinal', 'fixed', 'mutable'].map(k => {
+    const pct = Math.round(modCount[k] / total * 100);
+    const cn = AK.modalityNameCn?.[k] || k;
+    return `<div style="flex:1; text-align:center;"><div style="font-size:0.8rem; color:var(--text-secondary);">${cn}</div><div style="font-size:1.1rem; font-weight:600; color:var(--accent-purple,#a78bfa);">${modCount[k]}/${total}</div><div style="font-size:0.7rem; color:var(--text-muted);">${pct}%</div></div>`;
+  }).join('');
+
+  // 核心三位卡片
+  const core = (label, icon, data, reading) => {
+    if (!data || !data.nameCn) return '';
+    const short = AK.signShort?.[data.name] || '';
+    return `<div style="flex:1; min-width:140px; padding:0.8rem; background:var(--bg-inner); border-radius:0.6rem; border:1px solid rgba(201,168,76,0.2);">
+      <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.3rem;">${icon} ${label}</div>
+      <div style="font-size:1.2rem; font-weight:600; color:var(--accent-gold);">${short} ${escapeHtml(data.nameCn)}</div>
+      ${data.degree != null ? `<div style="font-size:0.75rem; color:var(--text-muted);">${data.degree.toFixed(1)}°</div>` : ''}
+      ${reading ? `<div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.5rem; line-height:1.5;">${escapeHtml(reading)}</div>` : ''}
+    </div>`;
+  };
+  const sunReading = AK.sunInSigns?.[chart.sun?.name]?.reading || AK.sunInSigns?.[chart.sun?.name]?.keyword;
+  const moonReading = AK.moonInSigns?.[chart.moon?.name]?.reading || AK.moonInSigns?.[chart.moon?.name]?.keyword;
+  const ascReading = AK.ascInSigns?.[chart.ascendant?.name]?.reading || AK.ascInSigns?.[chart.ascendant?.name]?.keyword;
+
+  // 8 行星落座列表
+  const planetRows = planetDefs.map(p => {
+    const data = getPlanetData(p.key);
+    if (!data || !data.nameCn) return '';
+    const reading = getSignReading(p.key, data.name);
+    return `<div style="padding:0.6rem 0; border-bottom:1px dashed rgba(255,255,255,0.08);">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span style="font-size:1.1rem; width:1.5rem; text-align:center;">${p.icon}</span>
+        <span style="min-width:3rem; color:var(--text-secondary); font-size:0.85rem;">${p.cn}</span>
+        <span style="flex:1; font-weight:500; color:var(--accent-gold);">${AK.signShort?.[data.name] || ''} ${escapeHtml(data.nameCn)}</span>
+        <span style="color:var(--text-muted); font-size:0.75rem;">${data.degree != null ? data.degree.toFixed(1) + '°' : ''}</span>
+      </div>
+      ${reading ? `<div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.3rem; line-height:1.5; padding-left:0.5rem;">${escapeHtml(reading.reading || reading.keyword || '')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // 相位列表
+  const planetCN = { sun: '☉', moon: '☽', mercury: '☿', venus: '♀', mars: '♂' };
+  const aspectList = (chart.aspects || []).slice(0, 6).map(a => {
+    const typeReading = AK.aspects?.[a.type];
+    const tName = typeReading?.name || a.name || a.type;
+    return `<div style="display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; background:var(--bg-inner); border-radius:0.4rem; font-size:0.8rem;">
+      <span>${planetCN[a.p1] || a.p1} ${tName} ${planetCN[a.p2] || a.p2}</span>
+      <span style="color:var(--text-muted); font-size:0.7rem;">误差 ${a.orb}°</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('astrologyResult').innerHTML = `
+    <div class="card">
+      <div style="text-align:center; margin-bottom:1rem;">
+        <div style="font-size:0.85rem; color:var(--text-secondary);">📜 ${y} 年 ${mo} 月 ${da} 日 · 本命星图</div>
+        <div style="font-size:1rem; color:var(--accent-gold); margin-top:0.3rem;">8 行星落座 + 元素/模式 + 主要相位</div>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+        ${core('太阳(核心自我)', '☉', chart.sun, sunReading)}
+        ${core('月亮(情感本能)', '☽', chart.moon, moonReading)}
+        ${core('上升(外在人格)', '↑', chart.ascendant, ascReading)}
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">🌗 元素分布</div>
+        <div style="display:flex; gap:0.5rem; padding:0.6rem; background:var(--bg-inner); border-radius:0.5rem;">${elemHtml}</div>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">🎯 模式分布</div>
+        <div style="display:flex; gap:0.5rem; padding:0.6rem; background:var(--bg-inner); border-radius:0.5rem;">${modHtml}</div>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">🪐 8 行星落座</div>
+        ${planetRows}
+      </div>
+
+      ${aspectList ? `<div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">⚡ 主要相位</div>
+        <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">${aspectList}</div>
+      </div>` : ''}
+    </div>
+    <button class="btn btn-secondary" onclick="document.getElementById('astrologyInputCard').style.display='block';document.getElementById('astrologyResult').style.display='none';document.getElementById('astrologyInputCard').scrollIntoView({behavior:'smooth'});" style="margin-top:1rem;">🔄 重新计算</button>
+  `;
+}
+
+// ==================== 生命灵数 · 数字命理（V1.0）====================
+
+/**
+ * 主入口:生命灵数矩阵
+ */
+async function getNumerologyProfile() {
+  const birthday = getBirthday('numerologyBirthdayGroup');
+  if (!birthday) { alert('请先填写生日'); return; }
+  const [y, m, d] = birthday.split('-').map(Number);
+  const now = new Date();
+  const curY = now.getFullYear();
+  const curM = now.getMonth() + 1;
+
+  const lifePath = calcLifePathNumber(y, m, d);
+  const bdayNum = calcBirthdayNumber(d);
+  const attNum = calcAttitudeNumber(m, d);
+  const matNum = calcMaturityNumber(lifePath.value, bdayNum.value);
+  const yearNum = calcLifePathNumber(y, 1, 1); // 年份数字
+  const persYear = calcPersonalYear(m, d, curY);
+  const persMonth = calcPersonalMonth(persYear.value, curM);
+
+  state.numerologyProfile = {
+    birthday, lifePath, bdayNum, attNum, matNum, yearNum, persYear, persMonth
+  };
+
+  document.getElementById('numerologyInputCard').style.display = 'none';
+  document.getElementById('numerologyResult').style.display = 'block';
+  renderNumerologyMatrix(state.numerologyProfile);
+  document.getElementById('numerologyResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function numCard(label, icon, numObj, key) {
+  const data = window.MBTI_DATA?.numerology?.numbers?.[String(numObj.value)];
+  if (!data) return '';
+  const masterBadge = numObj.isMaster ? '<span style="font-size:0.65rem; padding:0.15rem 0.4rem; background:linear-gradient(135deg,#f4d03f,#c9a84c); color:#1a1612; border-radius:0.4rem; margin-left:0.3rem; font-weight:600;">大师数</span>' : '';
+  return `
+    <div class="card" style="margin-bottom:0.8rem; border-left:3px solid var(--accent-gold);">
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+        <span style="font-size:1.4rem;">${icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:0.8rem; color:var(--text-secondary);">${label}</div>
+          <div style="font-size:1.4rem; font-weight:600; color:var(--accent-gold);">${numObj.value}${masterBadge} <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:400;">${data.title}</span></div>
+        </div>
+      </div>
+      ${data.keywords ? `<div style="font-size:0.78rem; color:var(--accent-purple,#a78bfa); margin-bottom:0.4rem;">${data.keywords.map(k => '·' + escapeHtml(k)).join(' ')}</div>` : ''}
+      ${data.essence ? `<div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.6; margin-bottom:0.5rem; font-style:italic;">${escapeHtml(data.essence)}</div>` : ''}
+      ${data.personality ? `<div style="font-size:0.82rem; color:var(--text-primary); line-height:1.7; margin-bottom:0.5rem;">${escapeHtml(data.personality)}</div>` : ''}
+      <details style="margin-top:0.4rem;">
+        <summary style="font-size:0.78rem; color:var(--accent-gold); cursor:pointer;">展开完整解读 ▼</summary>
+        <div style="padding:0.5rem 0; font-size:0.78rem; color:var(--text-secondary); line-height:1.7;">
+          ${data.talent ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">🎁 天赋:</strong>${escapeHtml(data.talent)}</div>` : ''}
+          ${data.career ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">💼 适合领域:</strong>${escapeHtml(data.career)}</div>` : ''}
+          ${data.love ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">💕 爱情:</strong>${escapeHtml(data.love)}</div>` : ''}
+          ${data.relationship ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">💞 关系:</strong>${escapeHtml(data.relationship)}</div>` : ''}
+          ${data.shadow ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">🌑 阴影面:</strong>${escapeHtml(data.shadow)}</div>` : ''}
+          ${data.advice ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">💡 建议:</strong>${escapeHtml(data.advice)}</div>` : ''}
+          ${data.compatibility ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">🤝 契合:</strong>${data.compatibility.map(c => escapeHtml(c)).join(' / ')}</div>` : ''}
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+/**
+ * 渲染生命灵数矩阵
+ */
+function renderNumerologyMatrix(p) {
+  const html = `
+    <div class="card" style="text-align:center; background:linear-gradient(135deg, rgba(201,168,76,0.15), rgba(168,85,247,0.1));">
+      <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.3rem;">📜 你的生日</div>
+      <div style="font-size:1.3rem; color:var(--accent-gold); font-weight:600;">${p.birthday}</div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">生命灵数(Pythagorean 系统,11/22/33 为大师数)</div>
+    </div>
+
+    ${numCard('生命数字 / Life Path · 主命数', '🌟', p.lifePath, 'lifePath')}
+    ${numCard('生日数字 / Birthday', '🎂', p.bdayNum, 'bdayNum')}
+    ${numCard('态度数字 / Attitude · 月+日', '🌊', p.attNum, 'attNum')}
+    ${numCard('成熟数字 / Maturity · 生命+生日', '🌳', p.matNum, 'matNum')}
+
+    <div class="card" style="margin-bottom:0.8rem;">
+      <div style="font-size:0.85rem; color:var(--accent-gold); font-weight:600; margin-bottom:0.5rem;">📅 当下能量(个人年 + 个人月)</div>
+      <div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.6;">
+        <strong style="color:var(--text-primary);">${new Date().getFullYear()} 个人年:</strong> ${p.persYear.value}${p.persYear.isMaster ? ' (大师数)' : ''}
+        — 今年的主题是「${
+          ({1:'开创',2:'合作',3:'表达',4:'建设',5:'突破',6:'责任',7:'内省',8:'成就',9:'完成',11:'灵性启发',22:'大师建造',33:'大爱奉献'})[p.persYear.value] || '...'
+        }」。<br>
+        <strong style="color:var(--text-primary);">${new Date().getMonth()+1} 月 个人月:</strong> ${p.persMonth.value}${p.persMonth.isMaster ? ' (大师数)' : ''}
+        — 这个月聚焦「${
+          ({1:'启动',2:'协调',3:'创意',4:'落地',5:'行动',6:'关怀',7:'思考',8:'推进',9:'收尾',11:'顿悟',22:'大工程',33:'服务他人'})[p.persMonth.value] || '...'
+        }」。
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:0.8rem;">
+      <div style="font-size:0.85rem; color:var(--accent-gold); font-weight:600; margin-bottom:0.5rem;">🔢 推演过程</div>
+      <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.7; font-family:monospace;">
+        · 生命数字: ${p.lifePath.trace.join(' → ')}<br>
+        · 生日数字: ${p.bdayNum.trace.join(' → ')}<br>
+        · 态度数字: ${p.attNum.trace.join(' → ')}<br>
+        · 成熟数字: ${p.matNum.trace.join(' → ')}<br>
+        · ${new Date().getFullYear()} 个人年: ${p.persYear.trace.join(' → ')}<br>
+        · ${new Date().getMonth()+1} 月 个人月: ${p.persMonth.trace.join(' → ')}
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="document.getElementById('numerologyInputCard').style.display='block';document.getElementById('numerologyResult').style.display='none';document.getElementById('numerologyInputCard').scrollIntoView({behavior:'smooth'});" style="margin-top:1rem;">🔄 重新计算</button>
+  `;
+  document.getElementById('numerologyResult').innerHTML = html;
+}
