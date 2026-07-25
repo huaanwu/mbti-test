@@ -4921,6 +4921,21 @@ async function scanLANForLLM() {
   resultEl.innerHTML = '<div class="lan-scan-status">🔍 正在获取本机 IP...</div>';
   if (scanBtn) scanBtn.disabled = true;
 
+  // 检测是否在 APK 内（Capacitor 注入的 scheme + UA 标记）
+  const isAPK = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isAPK && location.protocol !== 'capacitor:' && location.hostname === 'localhost' && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/.test(location.hostname)) {
+    // web/浏览器环境: 提示用户改用手动输入,因为桌面 Chrome 默认禁用了 Private Network Access
+    resultEl.innerHTML = '<div style="font-size:0.78rem; color:var(--text-secondary); padding:0.5rem; text-align:center;">\n'
+      + '<strong style="color:var(--accent-gold);">⚠️ 浏览器限制</strong><br>\n'
+      + '桌面浏览器的安全策略禁用了对局域网的自动扫描。<br>\n'
+      + '请直接在下方输入框填写电脑 IP（如 <code>192.168.1.3:8082</code>），<br>\n'
+      + '点击"测试连接"验证后点击"保存配置"。<br><br>\n'
+      + '<small style="color:var(--text-muted);">提示：手机 App 的"自动扫描"功能正常，可直接扫描。</small>\n'
+      + '</div>';
+    if (scanBtn) scanBtn.disabled = false;
+    return;
+  }
+
   const port = 8082;
   const found = [];
 
