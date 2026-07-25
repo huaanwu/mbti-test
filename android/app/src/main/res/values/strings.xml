@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MBTI性格测试</string>
+    <string name="title_activity_main">MBTI性格测试</string>
+    <string name="package_name">com.mbti.personality</string>
+    <string name="custom_url_scheme">com.mbti.personality</string>
+</resources>

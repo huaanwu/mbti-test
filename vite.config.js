@@ -7,6 +7,10 @@ export default defineConfig({
     emptyOutDir: true
   },
   server: {
-    port: 3000
+    port: 5183,
+    host: '0.0.0.0',
+    strictPort: false,
+    cors: true,
+    allowedHosts: true
   }
 })
