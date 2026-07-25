@@ -1144,7 +1144,7 @@ function getActiveEndpoint() {
   return {
     apiUrl: c.apiUrl || 'https://api.deepseek.com/v1/chat/completions',
     apiKey: key,
-    modelName: c.modelName || 'deepseek-chat',
+    modelName: c.modelName || 'deepseek-v4-pro',
   };
 }
 
@@ -1277,8 +1277,9 @@ async function callDeepSeek(opts) {
     });
 
     if (!res.ok) {
-      // 401 / 403 通常是 key 失效，回到输入界面（仅云端模式）
-      if ((res.status === 401 || res.status === 403) && getLLMConfig().active !== 'local') {
+      // 401 / 403 通常是 key 失效，回到输入界面（仅云端模式，跳过本地）
+      const isCloud = endpoint.apiKey !== 'not-needed';
+      if ((res.status === 401 || res.status === 403) && isCloud) {
         localStorage.removeItem('mbti_api_key');
         showApiKeyInput(outputEl, 'API Key 无效或已过期，请重新填写',
           () => callDeepSeek(opts));
