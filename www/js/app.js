@@ -4886,61 +4886,119 @@ function saveLLMConfigAndClose() {
   closeLLMSettings();
 }
 
-/** 局域网扫描：遍历常见内网 C 段，并发探测 8082 端口 */
+/** 通过 WebRTC ICE Candidate 获取本机局域网 IP，用于确定扫描网段 */
+function getLocalIP() {
+  return new Promise((resolve) => {
+    try {
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      pc.createDataChannel('');
+      pc.createOffer().then(o => pc.setLocalDescription(o));
+      let resolved = false;
+      pc.onicecandidate = e => {
+        if (!e.candidate || resolved) return;
+        const m = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
+        if (m && !m[0].startsWith('127.') && !m[0].startsWith('0.')) {
+          resolved = true;
+          pc.close();
+          resolve(m[0]);
+        }
+      };
+      setTimeout(() => { if (!resolved) { pc.close(); resolve(''); } }, 2000);
+    } catch (e) {
+      resolve('');
+    }
+  });
+}
+
+/** 局域网扫描：WebRTC 获取本机 IP → 同网段 1-254 XHR 探测 8082，找到即停 */
 async function scanLANForLLM() {
   const resultEl = document.getElementById('lanScanResult');
   const scanBtn = document.getElementById('btnScanLAN');
   if (!resultEl) return;
 
   resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div class="lan-scan-status">🔍 正在扫描局域网...</div>';
+  resultEl.innerHTML = '<div class="lan-scan-status">🔍 正在获取本机 IP...</div>';
   if (scanBtn) scanBtn.disabled = true;
 
-  const subnets = getLikelySubnets();
   const port = 8082;
   const found = [];
 
-  // 每个子网扫全部 1-254（每子网 254 个地址）
-  const targets = [];
-  for (const subnet of subnets) {
-    for (let i = 1; i <= 254; i++) {
-      targets.push({ ip: subnet + '.' + i });
-    }
+  // 1. 获取本机 IP，确定主网段
+  const myIp = await getLocalIP();
+  const bases = [];
+  if (myIp) {
+    const parts = myIp.split('.');
+    const prefix = parts[0] + '.' + parts[1] + '.' + parts[2];
+    bases.push(prefix);
   }
+  // 备用网段
+  ['192.168.1', '192.168.0', '192.168.31', '10.0.0'].forEach(b => {
+    if (!bases.includes(b)) bases.push(b);
+  });
 
-  // 并发探测（最多同时 10 个）
-  const CONCURRENCY = 10;
-  let scanned = 0;
-  const total = targets.length;
-
-  const probeOne = async (target) => {
-    try {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 1500);
-      const res = await fetch('http://' + target.ip + ':' + port + '/v1/models', {
-        signal: ctrl.signal,
-        mode: 'cors',
-      });
-      clearTimeout(timeout);
-      if (res.ok) {
-        found.push(target.ip);
+  // 2. XHR 批量探测（单批最多 50 个并发）
+  const scanBatch = (base, start, end) => {
+    return new Promise(resolve => {
+      const total = end - start + 1;
+      let remaining = total;
+      let done = false;
+      const settle = (ip) => {
+        if (done) return;
+        if (ip) { done = true; resolve(ip); return; }
+        remaining--;
+        if (remaining <= 0) { done = true; resolve(null); }
+      };
+      for (let i = start; i <= end; i++) {
+        const ip = base + '.' + i;
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'http://' + ip + ':' + port + '/v1/models', true);
+        xhr.timeout = 1500;
+        xhr.onload = () => settle((xhr.status === 200 || xhr.status === 502 || xhr.status === 503) ? ip : null);
+        xhr.onerror = () => settle(null);
+        xhr.ontimeout = () => settle(null);
+        xhr.send();
       }
-    } catch (e) { /* 不可达，忽略 */ }
-    scanned++;
-    // 更新进度
-    if (scanned % 5 === 0 || scanned === total) {
-      updateScanProgress(resultEl, found, scanned, total);
-    }
+    });
   };
 
-  // 分批并发
-  for (let i = 0; i < targets.length; i += CONCURRENCY) {
-    const batch = targets.slice(i, i + CONCURRENCY);
-    await Promise.all(batch.map(probeOne));
+  // 3. 逐网段扫描
+  let foundIp = null;
+  for (const base of bases) {
+    resultEl.innerHTML = '<div class="lan-scan-status">🔍 扫描 ' + base + '.1~50:' + port + '...</div>';
+    foundIp = await scanBatch(base, 1, 50);
+    if (foundIp) break;
+
+    resultEl.innerHTML = '<div class="lan-scan-status">🔍 扫描 ' + base + '.51~100:' + port + '...</div>';
+    foundIp = await scanBatch(base, 51, 100);
+    if (foundIp) break;
+
+    resultEl.innerHTML = '<div class="lan-scan-status">🔍 扫描 ' + base + '.101~254:' + port + '...</div>';
+    foundIp = await scanBatch(base, 101, 254);
+    if (foundIp) break;
   }
 
-  // 最终更新
-  updateScanProgress(resultEl, found, total, total);
+  // 4. 结果
+  if (foundIp) {
+    const addr = 'http://' + foundIp + ':' + port;
+    // 自动填充地址
+    const input = document.getElementById('lanAddressInput');
+    if (input) input.value = addr;
+    resultEl.innerHTML = '<div class="lan-scan-status" style="color:var(--accent-green);">✅ 发现服务器: ' + addr + '</div>';
+    // 获取模型名
+    try {
+      const res = await fetch(addr + '/v1/models', { method: 'GET', mode: 'cors' });
+      if (res.ok) {
+        const data = await res.json();
+        const models = data.data?.map(m => m.id) || [];
+        if (models.length > 0) {
+          resultEl.innerHTML += '<div class="lan-scan-status" style="color:var(--accent-gold);">🤖 模型: ' + models.join(', ') + '</div>';
+        }
+      }
+    } catch (e) {}
+  } else {
+    resultEl.innerHTML = '<div class="lan-scan-status" style="color:var(--accent-red);">❌ 未找到本地模型服务</div>'
+      + '<div style="font-size:0.78rem; color:var(--text-muted); padding:0.5rem; text-align:center;">请确认：<br>1. 手机和电脑在同一 WiFi 下<br>2. 本地模型已在 ' + port + ' 端口启动<br>3. 可以在上方手动输入电脑 IP</div>';
+  }
   if (scanBtn) scanBtn.disabled = false;
 }
 
