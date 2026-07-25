@@ -73,7 +73,6 @@ function getBirthday(groupId) {
 function setBirthday(groupId, val) {
   const g = document.getElementById(groupId);
   if (!g) return;
-  // 空值：清空所有选择
   if (!val) {
     if (g.querySelector('.bd-year')) g.querySelector('.bd-year').value = '';
     if (g.querySelector('.bd-month')) g.querySelector('.bd-month').value = '';
@@ -81,14 +80,27 @@ function setBirthday(groupId, val) {
     return;
   }
   const [y, m, d] = val.split('-').map(Number);
+
+  if (isLunarMode(groupId)) {
+    // 农历模式：先把公历转为农历，再回填农历下拉框
+    rebuildBirthdaySelects(groupId);
+    if (window.LUNAR) {
+      const lunar = window.LUNAR.solarToLunar(y, m, d);
+      if (lunar) {
+        if (g.querySelector('.bd-year')) g.querySelector('.bd-year').value = String(lunar.year);
+        const monthVal = lunar.isLeap ? 'L' + lunar.month : String(lunar.month);
+        if (g.querySelector('.bd-month')) g.querySelector('.bd-month').value = monthVal;
+        if (g.querySelector('.bd-day')) g.querySelector('.bd-day').value = String(lunar.day);
+        return;
+      }
+    }
+    // 转换失败时回退到公历模式
+    setLunarMode(groupId, false);
+  }
+
   if (g.querySelector('.bd-year')) g.querySelector('.bd-year').value = String(y);
   if (g.querySelector('.bd-month')) g.querySelector('.bd-month').value = String(m);
-  // 农历模式下不调用 refreshDaySelect（会覆盖中文日名为数字），直接用 rebuildBirthdaySelects
-  if (isLunarMode(groupId)) {
-    rebuildBirthdaySelects(groupId);
-  } else {
-    refreshDaySelect(g, y, m);
-  }
+  refreshDaySelect(g, y, m);
   if (g.querySelector('.bd-day')) g.querySelector('.bd-day').value = String(d);
 }
 
