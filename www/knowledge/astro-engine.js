@@ -7,8 +7,8 @@
  */
 
 const AstroEngine = {
-  version: "1.0",
-  description: "纯JS轻量占星引擎，零星历文件",
+  version: "1.1",
+  description: "纯JS轻量占星引擎，零星历文件（V1.1: +三王星 +等宫制宫位）",
   
   // ========== 基础常量 ==========
   SIGNS: ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
@@ -46,6 +46,15 @@ const AstroEngine = {
     mars:    { long0: 355.4330,  speed: 0.524033,  period: 686.98 },
     jupiter: { long0: 34.3515,   speed: 0.083056,  period: 4332.59 },
     saturn:  { long0: 50.0774,   speed: 0.033444,  period: 10759.22 },
+  },
+
+  // 三王星轨道要素（J2000: L0 平黄经 / periLong 近日点黄经 / e 偏心率 / speed 平均日速度）
+  // 偏心轨道需加中心差修正(getOuterPlanetLongitude)，否则 Pluto 误差可达一个星座
+  // 已用入星座锚点校准: 天王星 2011.3 入白羊 / 海王星 2012.2 入双鱼 / 冥王星 2008.1 入摩羯 ✓
+  OUTER_PLANETS: {
+    uranus:  { L0: 314.0550, periLong: 170.9642, e: 0.04638, speed: 0.011731, period: 30688.5 },
+    neptune: { L0: 304.8800, periLong: 44.9713,  e: 0.00946, speed: 0.005982, period: 60182 },
+    pluto:   { L0: 240.7338, periLong: 224.0689, e: 0.24881, speed: 0.003975, period: 90560 },
   },
 
   // ========== 工具函数 ==========
@@ -200,15 +209,44 @@ const AstroEngine = {
   /**
    * 行星黄经（简化平均轨道模型）
    * 误差: 内行星<3°, 外行星<5°，大众运势够用
+   * 三王星自动走 getOuterPlanetLongitude（带中心差修正）
    */
   getPlanetLongitude(planet, date) {
-    const p = this.PLANETS[planet.toLowerCase()];
+    const key = planet.toLowerCase();
+    if (this.OUTER_PLANETS[key]) return this.getOuterPlanetLongitude(key, date);
+    const p = this.PLANETS[key];
     if (!p) return null;
-    
+
     const d = this.daysSinceJ2000(date);
     let long = (p.long0 + p.speed * d) % 360;
     if (long < 0) long += 360;
-    
+
+    return long;
+  },
+
+  /**
+   * 三王星黄经（椭圆轨道：平黄经 + 中心差修正，展开到 e³）
+   * 误差: 天王星/海王星 < 2°, 冥王星 < 4°（1950-2050，未含海王星对冥王星的摄动）
+   * 注意: 出生在入星座日期前后 ~4° 区间时,三王星星座可能偏差一宫,属娱乐级精度
+   */
+  getOuterPlanetLongitude(planet, date) {
+    const p = this.OUTER_PLANETS[planet.toLowerCase()];
+    if (!p) return null;
+
+    const d = this.daysSinceJ2000(date);
+    const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+
+    // 平近点角 M = L - ϖ
+    const M = (p.L0 - p.periLong + p.speed * d) * D2R;
+    // 中心差: C = (2e - e³/4)·sinM + (5/4)e²·sin2M + (13/12)e³·sin3M
+    const e = p.e;
+    const C = (2*e - e*e*e/4) * Math.sin(M)
+            + (5/4) * e*e * Math.sin(2*M)
+            + (13/12) * e*e*e * Math.sin(3*M);
+
+    let long = (p.L0 + p.speed * d + C * R2D) % 360;
+    if (long < 0) long += 360;
+
     return long;
   },
   
@@ -236,7 +274,20 @@ const AstroEngine = {
       mars:    this.getPlanetSign('mars', d),
       jupiter: this.getPlanetSign('jupiter', d),
       saturn:  this.getPlanetSign('saturn', d),
+      uranus:  this.getPlanetSign('uranus', d),
+      neptune: this.getPlanetSign('neptune', d),
+      pluto:   this.getPlanetSign('pluto', d),
     };
+  },
+
+  /**
+   * 等宫制宫位:从上升黄经起每 30° 一宫
+   * 返回该黄经所在宫位(1-12)
+   */
+  houseOf(longitude, ascLongitude) {
+    let diff = (longitude - ascLongitude) % 360;
+    if (diff < 0) diff += 360;
+    return Math.floor(diff / 30) + 1;
   },
   
   /**
@@ -387,22 +438,36 @@ const AstroEngine = {
     let ascLong = (sunLong + (hourOffset + lngOffset) * 15) % 360;
     if (ascLong < 0) ascLong += 360;
     const ascSign = this.longitudeToSign(ascLong);
-    
-    // 各行星
+
+    // 等宫制十二宫位:从上升起每 30° 一宫(继承上升简化近似的精度)
+    const houses = [];
+    for (let i = 0; i < 12; i++) {
+      houses.push((ascLong + i * 30) % 360);
+    }
+    // 给落座对象标注宫位
+    const withHouse = (signObj, absLong) => {
+      if (signObj) signObj.house = this.houseOf(absLong, ascLong);
+      return signObj;
+    };
+    sunSign.house = this.houseOf(sunLong, ascLong);
+    const moonLong = this.getMoonLongitude(birthDate);
+    moonSign.house = this.houseOf(moonLong, ascLong);
+
+    // 各行星（5 古典 + 三王星）
     const planets = {};
-    ['mercury', 'venus', 'mars', 'jupiter', 'saturn'].forEach(p => {
+    const planetLongs = {};
+    ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'].forEach(p => {
       const long = this.getPlanetLongitude(p, birthDate);
-      planets[p] = this.longitudeToSign(long);
+      planetLongs[p] = long;
+      planets[p] = withHouse(this.longitudeToSign(long), long);
     });
-    
-    // 主要相位
+
+    // 主要相位（10 天体两两配对,按容差排序取前 10）
     const aspects = [];
     const allLongs = {
       sun: sunLong,
-      moon: this.getMoonLongitude(birthDate),
-      mercury: this.getPlanetLongitude('mercury', birthDate),
-      venus: this.getPlanetLongitude('venus', birthDate),
-      mars: this.getPlanetLongitude('mars', birthDate)
+      moon: moonLong,
+      ...planetLongs
     };
     
     const keys = Object.keys(allLongs);
@@ -424,6 +489,9 @@ const AstroEngine = {
       sun: sunSign,
       moon: moonSign,
       ascendant: ascSign,
+      ascendantLongitude: ascLong,
+      houseSystem: 'equal',   // 等宫制
+      houses,                 // 12 个宫头黄经
       planets,
       aspects: aspects.sort((a, b) => parseFloat(a.orb) - parseFloat(b.orb)).slice(0, 10)
     };

@@ -2,7 +2,7 @@
  * 占星解读知识库 V1.0 - 配合顾总 astro-engine.js
  * 版本: 1.0
  * 用途: AI prompt 注入 + 前端展示
- * 覆盖: 8 行星含义 + 12 星座太阳过境 + 12 月亮位置 + 6 相位
+ * 覆盖: 11 天体含义 + 12 星座太阳过境 + 12 月亮位置 + 6 相位 + 12 宫位(V1.1)
  * 路径: src/knowledge/astro-knowledge.js
  *
  * 数据风格跟 tarot-knowledge-v2.js / zodiac-knowledge.js 对齐
@@ -10,10 +10,10 @@
  */
 
 const ASTRO_KNOWLEDGE = {
-  version: "1.0",
-  updateDate: "2026-06-05",
+  version: "1.1",
+  updateDate: "2026-07-26",
   system: "西方占星(Western Astrology)",
-  planetCount: 8,
+  planetCount: 11,
   signCount: 12,
   aspectCount: 6,
 
@@ -67,6 +67,18 @@ const ASTRO_KNOWLEDGE = {
       keywords: ["变革", "创新", "独立", "突变", "解放"],
       domain: "革新能量、个人觉醒",
       meaning: "天王星代表一个人的革新能量和独立性。它带来突变、突破和解放，常常以'突然'的形式出现——突然的灵感、突如其来的变化、电光火石的领悟。天王星所在星座代表'你最需要打破常规、活出自我的领域'。天王星过境一个星座约 7 年，影响一代人的集体意识——天王星过水瓶时(2018-2026)，科技、社群、人道主义议题集体觉醒。天王星的能量是'电'，带来觉醒也带来混乱，需要接地。"
+    },
+    neptune: {
+      name: "海王星", enName: "Neptune", symbol: "♆",
+      keywords: ["梦想", "直觉", "慈悲", "灵性", "消融"],
+      domain: "梦想灵感、灵性直觉",
+      meaning: "海王星代表一个人的梦想、直觉和灵性追求。它掌管想象力、艺术灵感、同理心，也掌管迷雾——逃避、成瘾、自我欺骗。海王星所在星座代表'你在哪些领域最有灵感和慈悲，也最容易看不清'。海王星过境一个星座约 14 年，塑造一代人的集体梦想——海王星过双鱼时(2012-2026)，灵性、影像、虚拟世界全面兴盛。海王星的功课是'分辨直觉与幻想'：真正的灵感让你更清醒，假相让你更沉迷。"
+    },
+    pluto: {
+      name: "冥王星", enName: "Pluto", symbol: "♇",
+      keywords: ["转化", "重生", "权力", "执念", "深渊"],
+      domain: "深度转化、权力议题",
+      meaning: "冥王星代表一个人的深层转化力量和权力议题。它掌管毁灭与重生、执念与放下、隐藏的财富与真相。冥王星所在星座代表'你这一代人要集体经历的深层变革'，也指出你个人'最深的力量与最深的恐惧'所在。冥王星过境一个星座约 12-30 年不等——冥王星过摩羯时(2008-2024)，体制与权威经历瓦解重建；入水瓶后(2024-2044)，科技与集体意识深度变革。冥王星的功课是'凤凰涅槃'：紧抓不放的会被夺走，放手的会以新形式回来。"
     }
   },
 
@@ -289,27 +301,30 @@ const ASTRO_KNOWLEDGE = {
   formatChartForPrompt(chart) {
     if (!chart) return '';
     const lines = [];
-    const planetCn = { sun: '太阳', moon: '月亮', mercury: '水星', venus: '金星', mars: '火星', jupiter: '木星', saturn: '土星', uranus: '天王星' };
+    const planetCn = { sun: '太阳', moon: '月亮', mercury: '水星', venus: '金星', mars: '火星', jupiter: '木星', saturn: '土星', uranus: '天王星', neptune: '海王星', pluto: '冥王星' };
+    const fmt = (cn, p) => {
+      const deg = p.degree != null ? `${p.degree.toFixed(1)}°` : '';
+      const house = p.house ? `(${p.house}宫)` : '';
+      return `${cn}在${p.nameCn}${deg}${house}`;
+    };
     // 太阳/月亮直接在 chart 顶层
     ['sun', 'moon'].forEach(key => {
       const p = chart[key];
       if (!p || !p.nameCn) return;
-      const deg = p.degree != null ? `${p.degree.toFixed(1)}°` : '';
-      lines.push(`${planetCn[key]}在${p.nameCn}${deg}`);
+      lines.push(fmt(planetCn[key], p));
     });
-    // 5 内行星在 chart.planets
+    // 行星在 chart.planets（V1.1: 5 古典 + 三王星）
     if (chart.planets) {
-      ['mercury', 'venus', 'mars', 'jupiter', 'saturn'].forEach(key => {
+      ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'].forEach(key => {
         const p = chart.planets[key];
         if (!p || !p.nameCn) return;
-        const deg = p.degree != null ? `${p.degree.toFixed(1)}°` : '';
-        lines.push(`${planetCn[key]}在${p.nameCn}${deg}`);
+        lines.push(fmt(planetCn[key], p));
       });
     }
     // 上升
     if (chart.ascendant && chart.ascendant.nameCn) {
       const deg = chart.ascendant.degree != null ? `${chart.ascendant.degree.toFixed(1)}°` : '';
-      lines.push(`上升${chart.ascendant.nameCn}${deg}`);
+      lines.push(`上升${chart.ascendant.nameCn}${deg}(1宫)`);
     }
     // 前 3 个主要相位
     if (chart.aspects && chart.aspects.length) {
@@ -363,3 +378,27 @@ ASTRO_KNOWLEDGE.modalityNameCn = { cardinal:'本位', fixed:'固定', mutable:'�
 ASTRO_KNOWLEDGE.signShort = { aries:'♈',taurus:'♉',gemini:'♊',cancer:'♋',leo:'♌',virgo:'♍',libra:'♎',scorpio:'♏',sagittarius:'♐',capricorn:'♑',aquarius:'♒',pisces:'♓' };
 
 if (typeof window !== 'undefined') { window.ASTRO_KNOWLEDGE = ASTRO_KNOWLEDGE; }
+// ========== 天王星 x 12(V1.1,世代星,约 7 年一宫) ==========
+ASTRO_KNOWLEDGE.uranusInSigns = { aries:{kw:'先锋一代',r:'用全新方式开创,敢做第一个打破规则的人'}, taurus:{kw:'价值革新',r:'重新定义金钱与物质,用新方式改造旧产业'}, gemini:{kw:'信息革命',r:'思维前卫跳跃,天生适应信息与传播的变革'}, cancer:{kw:'家庭解构',r:'打破传统家庭模式,重新定义"家"的边界'}, leo:{kw:'创意爆发',r:'自我表达标新立异,艺术与娱乐的实验者'}, virgo:{kw:'技术务实',r:'用技术改进日常,工作与健康方式的革新者'}, libra:{kw:'关系重构',r:'重新定义婚姻与合作,追求平等自由的关系'}, scorpio:{kw:'深度颠覆',r:'直面禁忌与权力,心理与资源的解放者'}, sagittarius:{kw:'信仰突围',r:'打破教条,用跨界与远行探索真理'}, capricorn:{kw:'体制改造',r:'在体制内搞革新,用新规则替换旧秩序'}, aquarius:{kw:'觉醒本宫',r:'天王星入庙,科技与人道主义的天然先锋'}, pisces:{kw:'灵性重启',r:'消融边界,用艺术与直觉连接更大的存在'} };
+
+// ========== 海王星 x 12(V1.1,世代星,约 14 年一宫) ==========
+ASTRO_KNOWLEDGE.neptuneInSigns = { aries:{kw:'梦想行动派',r:'为理想而战,把灵性洞见变成开创行动'}, taurus:{kw:'感官之梦',r:'梦想落地生根,艺术与物质之美的追求者'}, gemini:{kw:'诗意表达',r:'用语言与文字造梦,传播理想与想象'}, cancer:{kw:'怀旧之梦',r:'对家与根源的理想化,情感深邃如潮汐'}, leo:{kw:'舞台幻梦',r:'为艺术与浪漫而生,创造如梦的自我表达'}, virgo:{kw:'疗愈之梦',r:'把理想注入服务与细节,身心疗愈的追求者'}, libra:{kw:'关系理想',r:'梦想完美的爱与和谐,审美的理想主义者'}, scorpio:{kw:'深渊之梦',r:'对神秘与转化的着迷,直觉穿透表象'}, sagittarius:{kw:'信仰之梦',r:'为理想与远方而活,哲学与灵性的追寻者'}, capricorn:{kw:'筑梦现实',r:'把梦想结构化,用长期努力实现理想'}, aquarius:{kw:'大同之梦',r:'梦想更好的世界,人道与科技的理想主义'}, pisces:{kw:'海王入庙',r:'直觉与慈悲的源头,与宇宙合一的梦想家'} };
+
+// ========== 冥王星 x 12(V1.1,世代星,约 12-30 年一宫) ==========
+ASTRO_KNOWLEDGE.plutoInSigns = { aries:{kw:'自我重生',r:'在自我认同上经历毁灭与重建,生命力顽强'}, taurus:{kw:'价值蜕变',r:'金钱与占有欲的功课,物质观的彻底重塑'}, gemini:{kw:'思想蜕变',r:'思维经历深度洗礼,言语有改变人心的力量'}, cancer:{kw:'根源蜕变',r:'家庭与情感根源的深层转化,从创伤中重生'}, leo:{kw:'创造蜕变',r:'自我表达经历淬火,权力与舞台的深层课题'}, virgo:{kw:'秩序蜕变',r:'对工作与健康的执念与转化,细节中的权力'}, libra:{kw:'关系蜕变',r:'亲密关系是炼金炉,在深度纠缠中学会平衡'}, scorpio:{kw:'冥王入庙',r:'天生的转化者,直面生死、权力与真相'}, sagittarius:{kw:'信仰蜕变',r:'信念体系的崩塌与重建,真理的追寻者'}, capricorn:{kw:'权力蜕变',r:'见证并参与体制与权威的瓦解与重建'}, aquarius:{kw:'集体蜕变',r:'科技与社群的深度变革者,集体意识的觉醒'}, pisces:{kw:'灵性蜕变',r:'潜意识的深海潜航,消融自我后的重生'} };
+
+// ========== 十二宫位含义(V1.1,等宫制) ==========
+ASTRO_KNOWLEDGE.houseMeanings = {
+  1:  { name: '命宫',   keyword: '自我与登场', meaning: '你的外在形象、性格底色和人生开场方式。落入此宫的行星会被直接"穿在身上",是别人最先看到的你。' },
+  2:  { name: '财帛宫', keyword: '金钱与价值', meaning: '你的赚钱方式、物质安全感和自我价值感。落入此宫的行星影响你与金钱和资源的关系。' },
+  3:  { name: '兄弟宫', keyword: '沟通与学习', meaning: '你的表达、学习、兄弟姐妹与日常出行。落入此宫的行星让你在某个领域特别"有话要说"。' },
+  4:  { name: '田宅宫', keyword: '家庭与根源', meaning: '你的原生家庭、居住环境和内心归属。落入此宫的行星指向"你从哪里来",以及你如何建立安全感。' },
+  5:  { name: '子女宫', keyword: '创造与恋爱', meaning: '你的创造力、恋爱方式、娱乐与子女。落入此宫的行星是你"玩得最投入"的领域。' },
+  6:  { name: '奴仆宫', keyword: '工作与健康', meaning: '你的日常工作、健康习惯与服务他人方式。落入此宫的行星要求你在日常秩序里修行。' },
+  7:  { name: '夫妻宫', keyword: '伴侣与合作', meaning: '你的婚姻、亲密关系和重要合作。落入此宫的行星描述你会被什么样的"另一半"吸引。' },
+  8:  { name: '疾厄宫', keyword: '亲密与转化', meaning: '你的深度亲密、共享资源、危机与重生。落入此宫的行星带你面对"平时不敢看"的深渊与宝藏。' },
+  9:  { name: '迁移宫', keyword: '远方与信仰', meaning: '你的远行、高等教育、哲学与信仰。落入此宫的行星是你"世界观"的来源。' },
+  10: { name: '官禄宫', keyword: '事业与地位', meaning: '你的事业方向、社会成就与公众形象。落入此宫的行星是你最容易"被世界看见"的领域。' },
+  11: { name: '福德宫', keyword: '朋友与愿景', meaning: '你的朋友、社群归属与理想愿景。落入此宫的行星影响你"和什么样的人一起走"。' },
+  12: { name: '玄秘宫', keyword: '潜意识与灵性', meaning: '你的潜意识、隐秘功课与灵性疗愈。落入此宫的行星在幕后运作,是需要"向内看"才能解锁的力量。' }
+};

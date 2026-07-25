@@ -3941,7 +3941,96 @@ async function getAstrologyNatalProfile() {
 }
 
 /**
- * 渲染本命盘:核心 3 位(太阳/月亮/上升) + 5 行星 + 元素/模式 + 主要相位
+ * SVG 星盘圆盘:12 星座环(按元素着色) + 等宫制宫线 + 10 天体落点 + 相位连线
+ * 升点固定在左侧(9 点钟),黄经逆时针增长(占星惯例)
+ */
+function renderChartWheel(chart) {
+  const asc = chart.ascendantLongitude;
+  if (asc == null || !chart.planets) return '';
+  const AK = window.ASTRO_KNOWLEDGE || {};
+  const CX = 200, CY = 200;
+  // 黄经 λ → SVG 坐标:升点在左(9 点钟),黄经增加沿逆时针(9→6→3→12 点钟),
+  // 1-6 宫在地平线下(下半圆),7-12 宫在上半圆(占星惯例)
+  const pt = (lambda, r) => {
+    const a = (180 + (lambda - asc)) * Math.PI / 180;
+    return [CX + r * Math.cos(a), CY - r * Math.sin(a)];
+  };
+  const xy = (p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+
+  // ---- 星座环(170-190) ----
+  const ELEM_FILL = { fire: 'rgba(239,68,68,0.16)', earth: 'rgba(132,204,22,0.13)', air: 'rgba(56,189,248,0.14)', water: 'rgba(167,139,250,0.17)' };
+  const ELEM_STROKE = { fire: '#ef4444', earth: '#84cc16', air: '#38bdf8', water: '#a78bfa' };
+  const SIGNS = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
+  let ring = '';
+  SIGNS.forEach((sid, i) => {
+    const elem = AK.elementMap?.[sid] || 'fire';
+    const l0 = i * 30, l1 = l0 + 30;
+    ring += `<path d="M${xy(pt(l0, 190))} A190,190 0 0 0 ${xy(pt(l1, 190))} L${xy(pt(l1, 170))} A170,170 0 0 1 ${xy(pt(l0, 170))} Z" fill="${ELEM_FILL[elem]}" stroke="${ELEM_STROKE[elem]}" stroke-width="0.5" stroke-opacity="0.5"/>`;
+    const [gx, gy] = pt(l0 + 15, 180);
+    ring += `<text x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" font-size="13" fill="${ELEM_STROKE[elem]}" text-anchor="middle" dominant-baseline="central">${AK.signShort?.[sid] || ''}</text>`;
+  });
+
+  // ---- 宫线(等宫制,内圈 160) ----
+  let houseSvg = `<circle cx="${CX}" cy="${CY}" r="160" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+  for (let h = 0; h < 12; h++) {
+    const cuspLong = (asc + h * 30) % 360;
+    const strong = h === 0;
+    houseSvg += `<line x1="${xy(pt(cuspLong, 160)).split(',')[0]}" y1="${xy(pt(cuspLong, 160)).split(',')[1]}" x2="${xy(pt(cuspLong, strong ? 132 : 148)).split(',')[0]}" y2="${xy(pt(cuspLong, strong ? 132 : 148)).split(',')[1]}" stroke="${strong ? '#e8c97a' : 'rgba(255,255,255,0.2)'}" stroke-width="${strong ? 1.5 : 0.7}"/>`;
+    const [nx, ny] = pt(cuspLong + 15, 140);
+    houseSvg += `<text x="${nx.toFixed(1)}" y="${ny.toFixed(1)}" font-size="9" fill="rgba(255,255,255,0.35)" text-anchor="middle" dominant-baseline="central">${h + 1}</text>`;
+  }
+  const [ax, ay] = pt(asc, 152);
+  houseSvg += `<text x="${ax.toFixed(1)}" y="${ay.toFixed(1)}" font-size="9" font-weight="bold" fill="#e8c97a" text-anchor="middle" dominant-baseline="central">ASC</text>`;
+
+  // ---- 10 天体落点(防重叠:角距 <9° 交替下沉) ----
+  const defs = [
+    { key: 'sun', icon: '☉' }, { key: 'moon', icon: '☽' },
+    { key: 'mercury', icon: '☿' }, { key: 'venus', icon: '♀' }, { key: 'mars', icon: '♂' },
+    { key: 'jupiter', icon: '♃' }, { key: 'saturn', icon: '♄' },
+    { key: 'uranus', icon: '♅' }, { key: 'neptune', icon: '♆' }, { key: 'pluto', icon: '♇' }
+  ];
+  const longByKey = {};
+  const bodies = [];
+  defs.forEach(d => {
+    const data = (d.key === 'sun' || d.key === 'moon') ? chart[d.key] : chart.planets[d.key];
+    if (!data || data.index == null) return;
+    const lambda = data.index * 30 + (data.degree || 0);
+    longByKey[d.key] = lambda;
+    bodies.push({ key: d.key, icon: d.icon, long: lambda });
+  });
+  bodies.sort((a, b) => a.long - b.long);
+  let lastLong = -99, level = 0;
+  bodies.forEach(b => {
+    if (b.long - lastLong < 9) level = (level + 1) % 3; else level = 0;
+    b.r = 120 - level * 15;
+    lastLong = b.long;
+  });
+
+  // ---- 相位连线(先画线,天体后画压在线上面) ----
+  const ASP_COLOR = { conjunction: '#f4d03f', sextile: '#38bdf8', square: '#f87171', trine: '#4ade80', opposition: '#c084fc' };
+  let aspSvg = '';
+  (chart.aspects || []).forEach(a => {
+    const l1 = longByKey[a.p1], l2 = longByKey[a.p2];
+    if (l1 == null || l2 == null) return;
+    if (a.type === 'conjunction') return; // 合相靠得近,连线无意义
+    const [x1, y1] = pt(l1, 105), [x2, y2] = pt(l2, 105);
+    aspSvg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${ASP_COLOR[a.type] || 'rgba(255,255,255,0.3)'}" stroke-width="1.2" stroke-opacity="0.55"/>`;
+  });
+
+  let bodySvg = '';
+  bodies.forEach(b => {
+    const [tx1, ty1] = pt(b.long, b.r + 9), [tx2, ty2] = pt(b.long, 160);
+    bodySvg += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}" stroke="rgba(232,201,122,0.35)" stroke-width="0.6"/>`;
+    const [bx, by] = pt(b.long, b.r);
+    bodySvg += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="10" fill="#1a1612" fill-opacity="0.85"/>`;
+    bodySvg += `<text x="${bx.toFixed(1)}" y="${by.toFixed(1)}" font-size="13" fill="#e8c97a" text-anchor="middle" dominant-baseline="central">${b.icon}</text>`;
+  });
+
+  return `<svg viewBox="0 0 400 400" style="width:100%; max-width:340px; display:block; margin:0 auto 1rem;" role="img" aria-label="本命星盘圆盘">${ring}${houseSvg}${aspSvg}${bodySvg}</svg>`;
+}
+
+/**
+ * 渲染本命盘:星盘圆盘 + 核心 3 位(太阳/月亮/上升) + 10 行星 + 十二宫位 + 元素/模式 + 主要相位
  */
 function renderNatalChart(chart, y, mo, da) {
   const AK = window.ASTRO_KNOWLEDGE || {};
@@ -3952,21 +4041,24 @@ function renderNatalChart(chart, y, mo, da) {
     { key: 'venus', icon: '♀', cn: '金星', domain: '爱情审美' },
     { key: 'mars', icon: '♂', cn: '火星', domain: '行动欲望' },
     { key: 'jupiter', icon: '♃', cn: '木星', domain: '成长幸运' },
-    { key: 'saturn', icon: '♄', cn: '土星', domain: '责任考验' }
+    { key: 'saturn', icon: '♄', cn: '土星', domain: '责任考验' },
+    { key: 'uranus', icon: '♅', cn: '天王星', domain: '变革觉醒' },
+    { key: 'neptune', icon: '♆', cn: '海王星', domain: '梦想直觉' },
+    { key: 'pluto', icon: '♇', cn: '冥王星', domain: '蜕变重生' }
   ];
 
   const getPlanetData = (key) => key === 'sun' || key === 'moon' ? chart[key] : chart.planets?.[key];
   const getSignReading = (planetKey, signId) => {
-    const map = { mercury: AK.mercuryInSigns, venus: AK.venusInSigns, mars: AK.marsInSigns, jupiter: AK.jupiterInSigns, saturn: AK.saturnInSigns };
+    const map = { mercury: AK.mercuryInSigns, venus: AK.venusInSigns, mars: AK.marsInSigns, jupiter: AK.jupiterInSigns, saturn: AK.saturnInSigns, uranus: AK.uranusInSigns, neptune: AK.neptuneInSigns, pluto: AK.plutoInSigns };
     if (planetKey === 'sun') return AK.sunInSigns?.[signId];
     if (planetKey === 'moon') return AK.moonInSigns?.[signId];
     return map[planetKey]?.[signId];
   };
 
-  // 元素/模式统计
+  // 元素/模式统计(10 天体 + 上升)
   const elemCount = { fire: 0, earth: 0, air: 0, water: 0 };
   const modCount = { cardinal: 0, fixed: 0, mutable: 0 };
-  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name].filter(Boolean);
+  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name, chart.planets?.uranus?.name, chart.planets?.neptune?.name, chart.planets?.pluto?.name].filter(Boolean);
   for (const sid of allSigns) {
     const e = AK.elementMap?.[sid]; if (e) elemCount[e]++;
     const m = AK.modalityMap?.[sid]; if (m) modCount[m]++;
@@ -3998,24 +4090,27 @@ function renderNatalChart(chart, y, mo, da) {
   const moonReading = AK.moonInSigns?.[chart.moon?.name]?.reading || AK.moonInSigns?.[chart.moon?.name]?.keyword;
   const ascReading = AK.ascInSigns?.[chart.ascendant?.name]?.reading || AK.ascInSigns?.[chart.ascendant?.name]?.keyword;
 
-  // 8 行星落座列表
+  // 10 行星落座列表(含宫位)
   const planetRows = planetDefs.map(p => {
     const data = getPlanetData(p.key);
     if (!data || !data.nameCn) return '';
     const reading = getSignReading(p.key, data.name);
+    // 解读字段兼容:太阳/月亮用 reading,行星×12 用 kw/r(修:原只读 reading/keyword 导致 5 行星解读空白)
+    const readingText = reading ? (reading.reading || reading.keyword || reading.r || reading.kw || '') : '';
     return `<div style="padding:0.6rem 0; border-bottom:1px dashed rgba(255,255,255,0.08);">
       <div style="display:flex; align-items:center; gap:0.5rem;">
         <span style="font-size:1.1rem; width:1.5rem; text-align:center;">${p.icon}</span>
         <span style="min-width:3rem; color:var(--text-secondary); font-size:0.85rem;">${p.cn}</span>
         <span style="flex:1; font-weight:500; color:var(--accent-gold);">${AK.signShort?.[data.name] || ''} ${escapeHtml(data.nameCn)}</span>
+        ${data.house ? `<span style="font-size:0.65rem; padding:0.1rem 0.35rem; background:rgba(168,85,247,0.15); color:var(--accent-purple,#a78bfa); border-radius:0.4rem; white-space:nowrap;">${data.house}宫</span>` : ''}
         <span style="color:var(--text-muted); font-size:0.75rem;">${data.degree != null ? data.degree.toFixed(1) + '°' : ''}</span>
       </div>
-      ${reading ? `<div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.3rem; line-height:1.5; padding-left:0.5rem;">${escapeHtml(reading.reading || reading.keyword || '')}</div>` : ''}
+      ${readingText ? `<div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.3rem; line-height:1.5; padding-left:0.5rem;">${escapeHtml(readingText)}</div>` : ''}
     </div>`;
   }).join('');
 
   // 相位列表
-  const planetCN = { sun: '☉', moon: '☽', mercury: '☿', venus: '♀', mars: '♂' };
+  const planetCN = { sun: '☉', moon: '☽', mercury: '☿', venus: '♀', mars: '♂', jupiter: '♃', saturn: '♄', uranus: '♅', neptune: '♆', pluto: '♇' };
   const aspectList = (chart.aspects || []).slice(0, 6).map(a => {
     const typeReading = AK.aspects?.[a.type];
     const tName = typeReading?.name || a.name || a.type;
@@ -4031,12 +4126,35 @@ function renderNatalChart(chart, y, mo, da) {
     </details>`;
   }).join('');
 
+  // 十二宫位卡(等宫制,折叠展示)
+  const HM = AK.houseMeanings || {};
+  const houseRows = (chart.houses || []).map((cuspLong, i) => {
+    const h = i + 1;
+    const cs = window.ASTRO_ENGINE?.longitudeToSign?.(cuspLong);
+    const hm = HM[h];
+    const occIcons = planetDefs.filter(pd => getPlanetData(pd.key)?.house === h).map(pd => pd.icon).join(' ');
+    return `<div style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; border-bottom:1px dashed rgba(255,255,255,0.06); font-size:0.78rem;">
+      <span style="min-width:2.2rem; color:var(--accent-gold); font-weight:600;">${h}宫</span>
+      <span style="min-width:4.8rem; color:var(--text-secondary);">${hm ? escapeHtml(hm.name) + '·' + escapeHtml(hm.keyword) : ''}</span>
+      <span style="min-width:3.2rem;">${cs ? (AK.signShort?.[cs.name] || '') + ' ' + cs.nameCn.replace('座', '') : ''}</span>
+      <span style="flex:1; color:#e8c97a;">${occIcons}</span>
+    </div>
+    ${hm?.meaning ? `<div style="font-size:0.7rem; color:var(--text-muted); padding:0 0 0.4rem 2.2rem; line-height:1.5;">${escapeHtml(hm.meaning)}</div>` : ''}`;
+  }).join('');
+  const housesCard = chart.houses ? `
+      <details style="margin-bottom:1rem;">
+        <summary style="font-size:0.85rem; color:var(--text-secondary); cursor:pointer;">🏠 十二宫位(等宫制) · 点击展开 ▼</summary>
+        <div style="margin-top:0.5rem;">${houseRows}</div>
+      </details>` : '';
+
   document.getElementById('astrologyResult').innerHTML = `
     <div class="card">
       <div style="text-align:center; margin-bottom:1rem;">
         <div style="font-size:0.85rem; color:var(--text-secondary);">📜 ${y} 年 ${mo} 月 ${da} 日 · 本命星图</div>
-        <div style="font-size:1rem; color:var(--accent-gold); margin-top:0.3rem;">8 行星落座 + 元素/模式 + 主要相位</div>
+        <div style="font-size:1rem; color:var(--accent-gold); margin-top:0.3rem;">10 行星落座 + 十二宫位 + 元素/模式 + 主要相位</div>
       </div>
+
+      ${renderChartWheel(chart)}
 
       <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
         ${core('太阳(核心自我)', '☉', chart.sun, sunReading)}
@@ -4055,9 +4173,11 @@ function renderNatalChart(chart, y, mo, da) {
       </div>
 
       <div style="margin-bottom:1rem;">
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">🪐 8 行星落座</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">🪐 10 行星落座(含宫位)</div>
         ${planetRows}
       </div>
+
+      ${housesCard}
 
       ${aspectList ? `<div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">⚡ 主要相位(点击展开解读)</div>
@@ -4079,10 +4199,10 @@ function generateAstrologyAIReport(chart, y, mo, da) {
   const AK = window.ASTRO_KNOWLEDGE || {};
   const chartText = typeof AK.formatChartForPrompt === 'function' ? AK.formatChartForPrompt(chart) : '';
 
-  // 元素/模式统计(与 renderNatalChart 同口径)
+  // 元素/模式统计(与 renderNatalChart 同口径:10 天体 + 上升)
   const elemCount = { fire: 0, earth: 0, air: 0, water: 0 };
   const modCount = { cardinal: 0, fixed: 0, mutable: 0 };
-  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name].filter(Boolean);
+  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name, chart.planets?.uranus?.name, chart.planets?.neptune?.name, chart.planets?.pluto?.name].filter(Boolean);
   for (const sid of allSigns) {
     const e = AK.elementMap?.[sid]; if (e) elemCount[e]++;
     const m = AK.modalityMap?.[sid]; if (m) modCount[m]++;
@@ -4103,7 +4223,7 @@ ${chartText}
 1. 核心人格画像(太阳+月亮+上升三位一体,250字)
 2. 天赋与思维风格(水星+木星,200字)
 3. 情感与行动模式(金星+火星,200字)
-4. 人生课题与成长方向(土星+主要相位,200字)
+4. 人生课题与世代印记(土星+三王星+宫位分布+主要相位,200字)
 5. 给此人的一句话核心建议
 
 要求:温暖、具体、避免绝对化表述,强调自我探索与成长,仅供娱乐参考。`;
