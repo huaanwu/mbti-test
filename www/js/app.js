@@ -4936,8 +4936,8 @@ async function scanLANForLLM() {
     if (!bases.includes(b)) bases.push(b);
   });
 
-  // 2. XHR 批量探测（单批最多 50 个并发）—— XHR 不带 Origin 触发不了 CORS
-  //    用 Image 探测：<img src="http://IP:port/v1/models"> 完全不受 CORS/PNA 限制
+  // 2. XHR 批量探测：每个 IP 用 XHR GET，单批 50 个并发
+  //    zhanbu 用 XHR,Android WebView 默认允许 192.168 访问
   const scanBatch = (base, start, end) => {
     return new Promise(resolve => {
       const total = end - start + 1;
@@ -4951,18 +4951,13 @@ async function scanLANForLLM() {
       };
       for (let i = start; i <= end; i++) {
         const ip = base + '.' + i;
-        const img = new Image();
-        // 不存在图片响应 404, 但服务器在线时仍会触发 onload(就算 4xx 也算连接成功)
-        img.onload = () => settle(ip);
-        img.onerror = () => {
-          // onerror 在 server 在线但无图片资源时也会触发, 但 status code > 0 表示连接成功
-          // fetch 同位置确认服务器响应
-          fetch('http://' + ip + ':' + port + '/v1/models', { method: 'GET', mode: 'no-cors', cache: 'no-store' })
-            .then(() => settle(ip))
-            .catch(() => settle(null));
-        };
-        img.src = 'http://' + ip + ':' + port + '/v1/models?t=' + Date.now();
-        setTimeout(() => settle(null), 1500);
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'http://' + ip + ':' + port + '/v1/models', true);
+        xhr.timeout = 800;
+        xhr.onload = () => settle((xhr.status === 200 || xhr.status === 502 || xhr.status === 503) ? ip : null);
+        xhr.onerror = () => settle(null);
+        xhr.ontimeout = () => settle(null);
+        xhr.send();
       }
     });
   };

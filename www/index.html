@@ -827,6 +827,17 @@
 <script src="js/config.js"></script>          <!-- 内部 API key（gitignored），必须同步（app.js 启动读）-->
 <script src="js/app.js"></script>             <!-- 主入口必须同步 -->
 
+<script>
+  // 注册 Service Worker,让局域网/本地请求走原生网络栈(绕过 SW 拦截和混合内容策略)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js').catch(function(e) {
+        console.warn('[SW] 注册失败:', e.message);
+      });
+    });
+  }
+</script>
+
 <!-- #40 E1：历史抽屉（fixed 右上角，浮层） -->
 <div id="historyDrawer" style="display:none; position:fixed; top:0; right:0; bottom:0; width:90%; max-width:380px; background:var(--bg-primary); border-left:1px solid rgba(201,168,76,0.4); z-index:200; flex-direction:column; box-shadow:-4px 0 16px rgba(0,0,0,0.5);">
   <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem; border-bottom:1px solid rgba(255,255,255,0.1);">
