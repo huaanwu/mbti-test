@@ -1115,7 +1115,7 @@ function getLLMConfig() {
     cloud: {
       provider: 'deepseek',
       apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-      modelName: 'deepseek-chat',
+      modelName: 'deepseek-v4-pro',
       apiKey: '',
     },
   };
@@ -4855,7 +4855,7 @@ function updateCloudKeyHint() {
 function onCloudProviderChange() {
   const prov = document.getElementById('cloudProvider').value;
   const presets = {
-    deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+    deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-v4-pro' },
     openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' },
     custom: { url: '', model: '' },
   };
