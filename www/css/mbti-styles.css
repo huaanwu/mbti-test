@@ -1181,3 +1181,122 @@ canvas#cognitiveRadar {
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
 }
+
+/* ========== 公历/农历切换开关 ========== */
+.calendar-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  width: fit-content;
+}
+.cal-option {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+  background: var(--bg-inner);
+  user-select: none;
+}
+.cal-option.active {
+  background: var(--accent-gold);
+  color: #1a1612;
+  font-weight: 600;
+}
+.cal-option:hover:not(.active) {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* ========== LLM 配置弹窗 ========== */
+.llm-settings-card {
+  max-width: 420px !important;
+  text-align: left !important;
+}
+.llm-tabs {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+  background: var(--bg-inner);
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+.llm-tab {
+  flex: 1;
+  padding: 0.5rem 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.llm-tab.active {
+  background: var(--accent-gold);
+  color: #1a1612;
+  font-weight: 600;
+}
+.llm-tab:hover:not(.active) {
+  color: var(--text-primary);
+}
+.llm-tab-content {
+  padding: 0.2rem 0;
+}
+.llm-tab-content .date-input {
+  margin-bottom: 0;
+}
+.llm-tab-content label {
+  font-size: 0.82rem;
+}
+
+/* 局域网扫描结果 */
+.lan-scan-result {
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--bg-inner);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 0.4rem;
+  margin-top: 0.5rem;
+}
+.lan-scan-status {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 0.4rem;
+  text-align: center;
+}
+.lan-address-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.lan-address-item:last-child { border-bottom: none; }
+.lan-address-item:hover { background: rgba(201,168,76,0.08); color: var(--text-primary); }
+.lan-address-item.active {
+  background: rgba(201,168,76,0.15);
+  color: var(--accent-gold);
+  font-weight: 600;
+  border-color: rgba(201,168,76,0.3);
+}
+.lan-address-status {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+.lan-address-status.ok { background: rgba(34,197,94,0.15); color: #22c55e; }
+.lan-address-status.fail { background: rgba(239,68,68,0.15); color: #ef4444; }
+.lan-address-status.pending { background: rgba(201,168,76,0.1); color: var(--accent-gold); }
+
+/* API Key 输入框 */

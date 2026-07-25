@@ -21,7 +21,7 @@
   script-src 'self';
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' data:;
-  connect-src 'self' https://api.deepseek.com;
+  connect-src 'self' https://api.deepseek.com https://api.openai.com http://192.168.*:* http://10.*:* http://172.16.*:* http://172.17.*:* http://172.18.*:* http://172.19.*:* http://172.20.*:* http://172.21.*:* http://172.22.*:* http://172.23.*:* http://172.24.*:* http://172.25.*:* http://172.26.*:* http://172.27.*:* http://172.28.*:* http://172.29.*:* http://172.30.*:* http://172.31.*:* http://localhost:*;
   font-src 'self' data: https://fonts.gstatic.com;
   object-src 'none';
   base-uri 'self';
@@ -33,6 +33,8 @@
 <div class="container">
 
   <!-- ============ 顶部模块切换 tab ============ -->
+  <button id="btnLLMSettings" style="position:fixed; top:0.5rem; right:8.5rem; z-index:101; background:rgba(201,168,76,0.15); color:var(--accent-gold); border:1px solid rgba(201,168,76,0.35); padding:0.4rem 0.55rem; border-radius:0.5rem; font-size:0.95rem; cursor:pointer; line-height:1;" title="大模型配置">⚙️</button>
+
   <button id="btnHistoryToggle" style="position:fixed; top:0.5rem; right:0.5rem; z-index:100; background:rgba(201,168,76,0.2); color:var(--accent-gold); border:1px solid rgba(201,168,76,0.4); padding:0.4rem 0.8rem; border-radius:0.5rem; font-size:0.85rem; cursor:pointer;">📚 我的历史</button>
 
   <nav class="module-tabs" id="moduleTabs">
@@ -293,6 +295,10 @@
       </div>
       <div id="baziInputSection">
         <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.3rem;">出生日期</label>
+        <div class="calendar-toggle" data-group="baziBirthdayGroup">
+          <span class="cal-option active" data-cal="solar">公历</span>
+          <span class="cal-option" data-cal="lunar">农历</span>
+        </div>
         <div class="birthday-selects" id="baziBirthdayGroup">
           <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
           <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
@@ -425,6 +431,10 @@
       </div>
 
       <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="calendar-toggle" data-group="zodiacBirthdayGroup">
+        <span class="cal-option active" data-cal="solar">公历</span>
+        <span class="cal-option" data-cal="lunar">农历</span>
+      </div>
       <div class="birthday-selects" id="zodiacBirthdayGroup">
         <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
         <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
@@ -478,6 +488,10 @@
       <div id="coupleInputSection" style="display:none; margin-top:0.8rem; padding-top:0.8rem; border-top:1px dashed rgba(255,255,255,0.15);">
         <div style="font-size:0.85rem; color:var(--accent-pink, #ec4899); font-weight:600; margin-bottom:0.5rem;">💞 TA 的出生信息</div>
         <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.2rem;">TA 的生日</label>
+        <div class="calendar-toggle" data-group="coupleBirthdayGroup">
+          <span class="cal-option active" data-cal="solar">公历</span>
+          <span class="cal-option" data-cal="lunar">农历</span>
+        </div>
         <div class="birthday-selects" id="coupleBirthdayGroup">
           <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
           <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
@@ -529,6 +543,10 @@
       </div>
 
       <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="calendar-toggle" data-group="shengxiaoBirthdayGroup">
+        <span class="cal-option active" data-cal="solar">公历</span>
+        <span class="cal-option" data-cal="lunar">农历</span>
+      </div>
       <div class="birthday-selects" id="shengxiaoBirthdayGroup">
         <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
         <select class="date-input bd-month" style="flex:1.2"><option value="">月</option></select>
@@ -690,6 +708,10 @@
       </div>
 
       <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="calendar-toggle" data-group="astrologyBirthdayGroup">
+        <span class="cal-option active" data-cal="solar">公历</span>
+        <span class="cal-option" data-cal="lunar">农历</span>
+      </div>
       <div class="birthday-selects" id="astrologyBirthdayGroup">
         <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
         <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
@@ -741,6 +763,10 @@
       </div>
 
       <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">你的生日</label>
+      <div class="calendar-toggle" data-group="numerologyBirthdayGroup">
+        <span class="cal-option active" data-cal="solar">公历</span>
+        <span class="cal-option" data-cal="lunar">农历</span>
+      </div>
       <div class="birthday-selects" id="numerologyBirthdayGroup">
         <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
         <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
@@ -757,6 +783,10 @@
         💞 <strong>灵数配对</strong>:输入 TA 的生日,看你们的生命数字契合度(需先填好上方你的生日)。
       </div>
       <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">TA 的生日</label>
+      <div class="calendar-toggle" data-group="numCoupleBirthdayGroup">
+        <span class="cal-option active" data-cal="solar">公历</span>
+        <span class="cal-option" data-cal="lunar">农历</span>
+      </div>
       <div class="birthday-selects" id="numCoupleBirthdayGroup">
         <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
         <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
@@ -793,6 +823,7 @@
 
 <!-- #H2 塔罗+八字 cross：八字计算用 src/js/bazi.js（自写简化版 0 依赖）-->
 <script src="js/bazi.js"></script>
+<script src="js/lunar.js"></script>          <!-- 农历转换库：公历↔农历互转（1900-2100） -->
 <script src="js/config.js"></script>          <!-- 内部 API key（gitignored），必须同步（app.js 启动读）-->
 <script src="js/app.js"></script>             <!-- 主入口必须同步 -->
 
@@ -805,6 +836,54 @@
   <div id="historyList" style="flex:1; overflow-y:auto;"></div>
   <div id="historyEmpty" style="display:none; text-align:center; padding:3rem 1rem; color:var(--text-muted); font-size:0.9rem;">
     还没有测试记录<br>完成任意测试后会自动保存到这里
+  </div>
+</div>
+
+<!-- LLM 大模型配置弹窗 -->
+<div class="modal" id="llmSettingsModal" style="display:none;">
+  <div class="modal-overlay" data-action="close-llm-settings"></div>
+  <div class="modal-card llm-settings-card">
+    <div class="modal-title">⚙️ 大模型配置</div>
+    <div class="llm-tabs">
+      <button class="llm-tab active" data-llm-tab="local">🏠 本地模型</button>
+      <button class="llm-tab" data-llm-tab="cloud">☁️ 云端模型</button>
+    </div>
+    <!-- 本地模型 tab -->
+    <div id="llmTabLocal" class="llm-tab-content">
+      <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.5;">
+        自动搜索局域网内运行大模型的设备（默认端口 8082），找到后可直接连接使用。
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+        <input type="text" id="lanAddressInput" class="date-input" placeholder="http://192.168.x.x:8082" style="flex:1;" />
+        <button class="btn btn-secondary" id="btnScanLAN" style="margin-bottom:0; white-space:nowrap; padding:0.4rem 0.8rem;">🔍 自动扫描</button>
+      </div>
+      <div id="lanScanResult" class="lan-scan-result" style="display:none;"></div>
+      <button class="btn btn-secondary" id="btnTestLAN" style="margin-top:0.5rem; width:100%;">🔗 测试连接</button>
+      <div id="lanTestResult" style="font-size:0.78rem; margin-top:0.5rem; text-align:center;"></div>
+    </div>
+    <!-- 云端模型 tab -->
+    <div id="llmTabCloud" class="llm-tab-content" style="display:none;">
+      <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:0.3rem;">模型服务商</label>
+      <select id="cloudProvider" class="date-input">
+        <option value="deepseek">DeepSeek</option>
+        <option value="openai">OpenAI</option>
+        <option value="custom">自定义</option>
+      </select>
+      <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-top:0.6rem; margin-bottom:0.3rem;">API 地址</label>
+      <input type="text" id="cloudApiUrl" class="date-input" placeholder="https://api.deepseek.com/v1/chat/completions" />
+      <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-top:0.6rem; margin-bottom:0.3rem;">模型名称</label>
+      <input type="text" id="cloudModelName" class="date-input" placeholder="deepseek-chat" />
+      <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-top:0.6rem; margin-bottom:0.3rem;">API Key</label>
+      <div style="display:flex; gap:0.4rem;">
+        <input type="password" id="cloudApiKey" class="date-input" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" style="flex:1; font-family:monospace; font-size:0.82rem; min-width:0;" />
+        <button class="btn btn-secondary" id="btnToggleKeyVis" style="margin-bottom:0; padding:0.4rem 0.6rem; font-size:0.85rem;" title="显示/隐藏">👁</button>
+      </div>
+      <div id="cloudKeyHint" style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:1rem;">
+      <button class="btn btn-secondary" data-action="close-llm-settings">关闭</button>
+      <button class="btn btn-primary" id="btnSaveLLMConfig">💾 保存配置</button>
+    </div>
   </div>
 </div>
 

@@ -44,7 +44,7 @@ const state = {
 
 // ==================== 生日 & 城市输入工具 ====================
 
-/** 从三下拉（年/月/日）读取生日值，返回 YYYY-MM-DD 或空字符串 */
+/** 从三下拉（年/月/日）读取生日值，返回 YYYY-MM-DD 或空字符串。农历模式下自动转换为公历 */
 function getBirthday(groupId) {
   const g = document.getElementById(groupId);
   if (!g) return '';
@@ -52,7 +52,21 @@ function getBirthday(groupId) {
   const m = g.querySelector('.bd-month')?.value;
   const d = g.querySelector('.bd-day')?.value;
   if (!y || !m || !d) return '';
-  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+
+  if (isLunarMode(groupId) && window.LUNAR) {
+    // 农历 → 公历转换
+    const isLeap = String(m).startsWith('L');
+    const lunarMonth = parseInt(String(m).replace('L', '')) || 1;
+    const lunarDay = parseInt(String(d)) || 1;
+    const solar = window.LUNAR.lunarToSolar(parseInt(y), lunarMonth, lunarDay, isLeap);
+    if (solar) {
+      return `${solar.year}-${String(solar.month).padStart(2, '0')}-${String(solar.day).padStart(2, '0')}`;
+    }
+    // 转换失败，fallback 到公历值
+    console.warn('农历→公历转换失败:', y, lunarMonth, lunarDay, isLeap);
+  }
+
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 /** 将 YYYY-MM-DD 值恢复到三下拉 */
@@ -69,8 +83,154 @@ function setBirthday(groupId, val) {
   const [y, m, d] = val.split('-').map(Number);
   if (g.querySelector('.bd-year')) g.querySelector('.bd-year').value = String(y);
   if (g.querySelector('.bd-month')) g.querySelector('.bd-month').value = String(m);
-  refreshDaySelect(g, y, m);
+  // 农历模式下不调用 refreshDaySelect（会覆盖中文日名为数字），直接用 rebuildBirthdaySelects
+  if (isLunarMode(groupId)) {
+    rebuildBirthdaySelects(groupId);
+  } else {
+    refreshDaySelect(g, y, m);
+  }
   if (g.querySelector('.bd-day')) g.querySelector('.bd-day').value = String(d);
+}
+
+// ==================== 农历模式管理 ====================
+
+/** 读取指定生日组的公历/农历模式（localStorage key: mbti_cal_mode_{groupId}） */
+function isLunarMode(groupId) {
+  try {
+    return localStorage.getItem('mbti_cal_mode_' + groupId) === 'lunar';
+  } catch (e) { return false; }
+}
+
+/** 设置指定生日组的模式并刷新 UI */
+function setLunarMode(groupId, isLunar) {
+  try {
+    localStorage.setItem('mbti_cal_mode_' + groupId, isLunar ? 'lunar' : 'solar');
+  } catch (e) { /* ignore */ }
+  // 刷新切换按钮样式
+  const toggle = document.querySelector(`.calendar-toggle[data-group="${groupId}"]`);
+  if (toggle) {
+    toggle.querySelectorAll('.cal-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.cal === (isLunar ? 'lunar' : 'solar'));
+    });
+  }
+  // 重建生日下拉框
+  rebuildBirthdaySelects(groupId);
+}
+
+/** 根据当前模式重建生日下拉框（公历：年份 1940-2010 / 农历：年份 1900-2100，含闰月） */
+function rebuildBirthdaySelects(groupId) {
+  const g = document.getElementById(groupId);
+  if (!g) return;
+  const lunar = isLunarMode(groupId);
+
+  // 保存当前值
+  const ySel = g.querySelector('.bd-year');
+  const mSel = g.querySelector('.bd-month');
+  const dSel = g.querySelector('.bd-day');
+  const curY = ySel?.value || '';
+  const curM = mSel?.value || '';
+  const curD = dSel?.value || '';
+
+  if (lunar) {
+    // 农历模式：年份 1900-2100
+    if (ySel) {
+      ySel.innerHTML = '<option value="">年份</option>';
+      for (let y = window.LUNAR.END_YEAR; y >= window.LUNAR.START_YEAR; y--) {
+        ySel.add(new Option(y + '年', y));
+      }
+      if (curY) ySel.value = curY;
+    }
+    // 月份：含闰月标记
+    if (mSel) {
+      mSel.innerHTML = '<option value="">月</option>';
+      const ly = parseInt(ySel?.value) || window.LUNAR.START_YEAR;
+      const months = window.LUNAR.getLunarMonths(ly);
+      months.forEach(mo => {
+        const label = (mo.isLeap ? '闰' : '') + window.LUNAR.LUNAR_MONTH_CN[mo.month - 1] + '月';
+        const val = mo.isLeap ? 'L' + mo.month : String(mo.month);
+        mSel.add(new Option(label, val));
+      });
+      if (curM) mSel.value = curM;
+    }
+    // 日：1-30
+    if (dSel) {
+      dSel.innerHTML = '<option value="">日</option>';
+      const lm = parseInt(ySel?.value) || window.LUNAR.START_YEAR;
+      const mmRaw = mSel?.value || '1';
+      const isLeap = mmRaw.startsWith('L');
+      const mm = parseInt(mmRaw.replace('L', '')) || 1;
+      const maxDay = window.LUNAR.getLunarMonthDays(lm, mm) || 30;
+      for (let d = 1; d <= maxDay; d++) {
+        dSel.add(new Option(window.LUNAR.LUNAR_DAY_CN[d] || d, d));
+      }
+      if (curD && parseInt(curD) <= maxDay) dSel.value = curD;
+    }
+
+    // 年月 change 刷新日下拉
+    const refreshLunarDay = () => {
+      const ly2 = parseInt(ySel?.value) || window.LUNAR.START_YEAR;
+      const mmRaw2 = mSel?.value || '1';
+      const mm2 = parseInt(mmRaw2.replace('L', '')) || 1;
+      const maxDay2 = window.LUNAR.getLunarMonthDays(ly2, mm2) || 30;
+      const curD2 = dSel?.value;
+      dSel.innerHTML = '<option value="">日</option>';
+      for (let d = 1; d <= maxDay2; d++) {
+        dSel.add(new Option(window.LUNAR.LUNAR_DAY_CN[d] || d, d));
+      }
+      if (curD2 && parseInt(curD2) <= maxDay2) dSel.value = curD2;
+    };
+    const refreshLunarMonth = () => {
+      // 年变化→刷新月（重新生成含闰月列表）
+      const ly3 = parseInt(ySel?.value) || window.LUNAR.START_YEAR;
+      const months2 = window.LUNAR.getLunarMonths(ly3);
+      const curM2 = mSel?.value;
+      mSel.innerHTML = '<option value="">月</option>';
+      months2.forEach(mo => {
+        const label = (mo.isLeap ? '闰' : '') + window.LUNAR.LUNAR_MONTH_CN[mo.month - 1] + '月';
+        const val = mo.isLeap ? 'L' + mo.month : String(mo.month);
+        mSel.add(new Option(label, val));
+      });
+      if (curM2 && [...mSel.options].some(o => o.value === curM2)) mSel.value = curM2;
+      refreshLunarDay();
+    };
+    ySel?.removeEventListener('change', refreshLunarMonth);
+    mSel?.removeEventListener('change', refreshLunarDay);
+    ySel?.addEventListener('change', refreshLunarMonth);
+    mSel?.addEventListener('change', refreshLunarDay);
+  } else {
+    // 公历模式：标准 1940-2010
+    if (ySel) {
+      ySel.innerHTML = '<option value="">年份</option>';
+      for (let y = 2010; y >= 1940; y--) {
+        ySel.add(new Option(y, y));
+      }
+      if (curY) ySel.value = curY;
+    }
+    if (mSel) {
+      mSel.innerHTML = '<option value="">月</option>';
+      for (let m = 1; m <= 12; m++) {
+        mSel.add(new Option(m, m));
+      }
+      if (curM) mSel.value = curM;
+    }
+    const refreshDay = () => {
+      const y = parseInt(ySel?.value) || 2000;
+      const mm = parseInt(mSel?.value) || 1;
+      refreshDaySelect(g, y, mm);
+    };
+    ySel?.removeEventListener('change', refreshDay);
+    mSel?.removeEventListener('change', refreshDay);
+    ySel?.addEventListener('change', refreshDay);
+    mSel?.addEventListener('change', refreshDay);
+    // 初始化日
+    refreshDay();
+    if (curD) {
+      const dS = g.querySelector('.bd-day');
+      if (dS && parseInt(curD) <= new Date(parseInt(ySel?.value) || 2000, parseInt(mSel?.value) || 1, 0).getDate()) {
+        dS.value = curD;
+      }
+    }
+  }
 }
 
 /** 根据年月刷新日下拉的最大天数（2月 28/29、30/31 天） */
@@ -86,10 +246,31 @@ function refreshDaySelect(g, year, month) {
   if (cur && parseInt(cur) <= maxDay) dSel.value = cur;
 }
 
-/** 初始化生日三下拉：填年份(1940-2010)、月份(1-12)、日(动态) */
+/** 初始化生日三下拉：填年份(1940-2010)、月份(1-12)、日(动态)。如果处于农历模式则渲染农历选择器 */
 function initBirthdaySelects(groupId) {
   const g = document.getElementById(groupId);
   if (!g) return;
+  // 初始化农历切换按钮事件
+  const toggle = document.querySelector(`.calendar-toggle[data-group="${groupId}"]`);
+  if (toggle && !toggle._bound) {
+    toggle._bound = true;
+    toggle.querySelectorAll('.cal-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const cal = opt.dataset.cal;
+        setLunarMode(groupId, cal === 'lunar');
+      });
+    });
+    // 初始高亮状态
+    const isLunar = isLunarMode(groupId);
+    toggle.querySelectorAll('.cal-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.cal === (isLunar ? 'lunar' : 'solar'));
+    });
+  }
+  // 初始状态渲染
+  if (isLunarMode(groupId)) {
+    rebuildBirthdaySelects(groupId);
+    return;
+  }
   const ySel = g.querySelector('.bd-year');
   const mSel = g.querySelector('.bd-month');
   // 填年份（只一次）
@@ -110,6 +291,8 @@ function initBirthdaySelects(groupId) {
     const m = parseInt(mSel?.value) || 1;
     refreshDaySelect(g, y, m);
   };
+  ySel?.removeEventListener('change', refresh);
+  mSel?.removeEventListener('change', refresh);
   ySel?.addEventListener('change', refresh);
   mSel?.addEventListener('change', refresh);
 }
@@ -901,18 +1084,64 @@ function switchTab(tabName) {
 }
 
 // ==================== AI 报告 ====================
-const getApiKey = () =>
-  // 优先级：localStorage（用户显式填的，最新） > config.js（默认/旧）
-  // 反过来会导致 config.js 失效时用户 key 死循环（review Bug 3）
-  localStorage.getItem('mbti_api_key')
-  || (window.MBTI_CONFIG?.deepseekApiKey?.startsWith('sk-')
-      ? window.MBTI_CONFIG.deepseekApiKey : null)
-  || '';
+
+// ==================== LLM 配置管理 ====================
+const LLM_CONFIG_KEY = 'mbti_llm_config';
+
+/** 读取 LLM 完整配置（默认本地优先） */
+function getLLMConfig() {
+  try {
+    const raw = localStorage.getItem(LLM_CONFIG_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+  return {
+    active: 'cloud',           // 'local' | 'cloud'
+    local: {
+      address: '',              // http://192.168.x.x:8082
+      modelName: 'qwen2.5-7b', // 默认兼容 Ollama / vLLM
+    },
+    cloud: {
+      provider: 'deepseek',
+      apiUrl: 'https://api.deepseek.com/v1/chat/completions',
+      modelName: 'deepseek-chat',
+      apiKey: '',
+    },
+  };
+}
+
+function saveLLMConfig(cfg) {
+  try { localStorage.setItem(LLM_CONFIG_KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
+}
+
+/** 返回当前激活的 { apiUrl, apiKey, modelName } */
+function getActiveEndpoint() {
+  const cfg = getLLMConfig();
+  if (cfg.active === 'local' && cfg.local.address) {
+    return {
+      apiUrl: cfg.local.address.replace(/\/$/, '') + '/v1/chat/completions',
+      apiKey: 'not-needed',
+      modelName: cfg.local.modelName || 'qwen2.5-7b',
+    };
+  }
+  // cloud / fallback
+  const c = cfg.cloud;
+  // API Key 来源：LLM_CONFIG 云配置 > localStorage mbti_api_key > config.js
+  const key = c.apiKey || localStorage.getItem('mbti_api_key')
+    || (window.MBTI_CONFIG?.deepseekApiKey?.startsWith('sk-') ? window.MBTI_CONFIG.deepseekApiKey : null) || '';
+  return {
+    apiUrl: c.apiUrl || 'https://api.deepseek.com/v1/chat/completions',
+    apiKey: key,
+    modelName: c.modelName || 'deepseek-chat',
+  };
+}
+
+const getApiKey = () => getActiveEndpoint().apiKey;
 
 /**
  * API key 合法性校验（review H6）：sk- 前缀 + 20-60 位字母数字
  */
 function isValidApiKey(key) {
+  if (!key || key === 'not-needed') return true; // 本地模型不需要 key
   return /^sk-[A-Za-z0-9]{20,60}$/.test(key);
 }
 
@@ -923,6 +1152,7 @@ function isValidApiKey(key) {
  */
 function maskApiKey(key) {
   if (!key || typeof key !== 'string') return '';
+  if (key === 'not-needed') return '（本地模型无需 Key）';
   if (key.length <= 8) return '••••';
   return `${key.slice(0, 4)}••••${key.slice(-4)}`;
 }
@@ -995,7 +1225,7 @@ function saveApiKeyAndGenerate() {
 }
 
 /**
- * 通用 DeepSeek 调用（review Q1：合并 3 处 AI 报告）
+ * 通用 LLM 调用（支持本地/云端切换）
  * @param {object} opts
  * @param {string} opts.prompt - 用户角色 prompt
  * @param {string} [opts.systemPrompt] - 系统提示（约束 LLM 行为）
@@ -1006,9 +1236,10 @@ function saveApiKeyAndGenerate() {
  */
 async function callDeepSeek(opts) {
   const { prompt, systemPrompt, outputEl, btn, temperature = 0.7, maxTokens = 1500 } = opts;
+  const endpoint = getActiveEndpoint();
 
-  // API key 缺失：渲染表单到 outputEl（Bug 4 修复），保存后回调重试
-  if (!getApiKey()) {
+  // API key 缺失且是云端模式：渲染表单到 outputEl
+  if (!endpoint.apiKey) {
     showApiKeyInput(outputEl, '', () => callDeepSeek(opts));
     return;
   }
@@ -1021,11 +1252,11 @@ async function callDeepSeek(opts) {
   messages.push({ role: 'user', content: prompt });
 
   try {
-    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const res = await fetch(endpoint.apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getApiKey()}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${endpoint.apiKey}` },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: endpoint.modelName,
         messages,
         temperature,
         max_tokens: maxTokens
@@ -1033,8 +1264,8 @@ async function callDeepSeek(opts) {
     });
 
     if (!res.ok) {
-      // 401 / 403 通常是 key 失效，回到输入界面
-      if (res.status === 401 || res.status === 403) {
+      // 401 / 403 通常是 key 失效，回到输入界面（仅云端模式）
+      if ((res.status === 401 || res.status === 403) && getLLMConfig().active !== 'local') {
         localStorage.removeItem('mbti_api_key');
         showApiKeyInput(outputEl, 'API Key 无效或已过期，请重新填写',
           () => callDeepSeek(opts));
@@ -1043,8 +1274,6 @@ async function callDeepSeek(opts) {
       throw new Error(`API错误: ${res.status}`);
     }
 
-    // 修：res.json() 直接 JSON.parse 抛 SyntaxError 会让 catch 报"No respons..."
-    // 改成先 .text() 拿原文 + try-parse 单独包，SyntaxError 转友好提示
     const responseText = await res.text();
     let data;
     try {
@@ -1069,7 +1298,6 @@ async function callDeepSeek(opts) {
           </div>
         </div>
       `;
-      // err.message 可能含 HTML（CORS 错误页等），用 textContent 防 XSS（review H4）
       outputEl.querySelector('.ai-error-msg').textContent = err.message;
     }
     if (btn) btn.style.display = 'block';
@@ -2904,6 +3132,43 @@ function initEventBindings() {
   if (histBtn) histBtn.addEventListener('click', toggleHistoryDrawer);
   const histCloseBtn = document.getElementById('btnHistoryClose');
   if (histCloseBtn) histCloseBtn.addEventListener('click', toggleHistoryDrawer);
+
+  // LLM 大模型配置
+  const llmBtn = document.getElementById('btnLLMSettings');
+  if (llmBtn) llmBtn.addEventListener('click', openLLMSettings);
+  bindByDataAction('close-llm-settings', closeLLMSettings);
+  const saveLLMBtn = document.getElementById('btnSaveLLMConfig');
+  if (saveLLMBtn) saveLLMBtn.addEventListener('click', saveLLMConfigAndClose);
+  // LLM 弹窗内 tab 切换
+  document.querySelectorAll('.llm-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.llmTab;
+      document.querySelectorAll('.llm-tab').forEach(b => b.classList.toggle('active', b.dataset.llmTab === tab));
+      document.getElementById('llmTabLocal').style.display = tab === 'local' ? '' : 'none';
+      document.getElementById('llmTabCloud').style.display = tab === 'cloud' ? '' : 'none';
+    });
+  });
+  // 本地扫描按钮
+  const scanBtn = document.getElementById('btnScanLAN');
+  if (scanBtn) scanBtn.addEventListener('click', () => scanLANForLLM());
+  // 扫描结果列表：事件委托（避免内联 onclick 违反 CSP）
+  const scanResultEl = document.getElementById('lanScanResult');
+  if (scanResultEl) scanResultEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.lan-address-item');
+    if (item && item.dataset.addr) selectLANAddress(item.dataset.addr);
+  });
+  // 连接测试按钮
+  const testBtn = document.getElementById('btnTestLAN');
+  if (testBtn) testBtn.addEventListener('click', testLANConnection);
+  // 云端 provider 切换
+  const provSel = document.getElementById('cloudProvider');
+  if (provSel) provSel.addEventListener('change', () => onCloudProviderChange());
+  // Key 显示/隐藏
+  const toggleKeyBtn = document.getElementById('btnToggleKeyVis');
+  if (toggleKeyBtn) toggleKeyBtn.addEventListener('click', () => {
+    const inp = document.getElementById('cloudApiKey');
+    if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
   // 塔罗版本（1/3 张，兼容旧）+ 4 牌阵（celtic/horseshoe/relationship/daily）
   document.querySelectorAll('.version-card[data-tarot-mode]').forEach(el => {
     el.addEventListener('click', () => {
@@ -4521,4 +4786,239 @@ function renderNumerologyCouple(meBirthday, taBirthday, meLP, taLP) {
       <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.6rem;">契合度基于 Pythagorean 灵数传统,仅供娱乐参考。</div>
     </div>
   `;
+}
+
+// ==================== LLM 大模型配置窗口 ====================
+
+/** 打开 LLM 配置弹窗，回填当前配置 */
+function openLLMSettings() {
+  const modal = document.getElementById('llmSettingsModal');
+  if (!modal) return;
+  const cfg = getLLMConfig();
+
+  // 回填云端配置
+  document.getElementById('cloudProvider').value = cfg.cloud.provider || 'deepseek';
+  document.getElementById('cloudApiUrl').value = cfg.cloud.apiUrl || 'https://api.deepseek.com/v1/chat/completions';
+  document.getElementById('cloudModelName').value = cfg.cloud.modelName || 'deepseek-chat';
+  document.getElementById('cloudApiKey').value = cfg.cloud.apiKey || '';
+  updateCloudKeyHint();
+
+  // 回填本地配置
+  document.getElementById('lanAddressInput').value = cfg.local.address || '';
+
+  // 根据 active 高亮对应 tab
+  const activeTab = cfg.active === 'local' ? 'local' : 'cloud';
+  document.querySelectorAll('.llm-tab').forEach(b => b.classList.toggle('active', b.dataset.llmTab === activeTab));
+  document.getElementById('llmTabLocal').style.display = activeTab === 'local' ? '' : 'none';
+  document.getElementById('llmTabCloud').style.display = activeTab === 'cloud' ? '' : 'none';
+
+  modal.style.display = 'flex';
+}
+
+function closeLLMSettings() {
+  document.getElementById('llmSettingsModal').style.display = 'none';
+}
+
+function updateCloudKeyHint() {
+  const el = document.getElementById('cloudKeyHint');
+  if (!el) return;
+  const key = document.getElementById('cloudApiKey')?.value;
+  if (key && isValidApiKey(key)) {
+    el.textContent = '当前：' + maskApiKey(key);
+    el.style.color = 'var(--accent-green)';
+  } else if (key) {
+    el.textContent = 'Key 格式可能无效';
+    el.style.color = 'var(--accent-red)';
+  } else {
+    el.textContent = '未设置';
+    el.style.color = 'var(--text-muted)';
+  }
+}
+
+/** 云端 provider 切换时自动填充 API 地址和模型名 */
+function onCloudProviderChange() {
+  const prov = document.getElementById('cloudProvider').value;
+  const presets = {
+    deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+    openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' },
+    custom: { url: '', model: '' },
+  };
+  const p = presets[prov] || presets.custom;
+  if (p.url) document.getElementById('cloudApiUrl').value = p.url;
+  if (p.model) document.getElementById('cloudModelName').value = p.model;
+}
+
+/** 保存 LLM 配置 */
+function saveLLMConfigAndClose() {
+  const activeTab = document.querySelector('.llm-tab.active')?.dataset?.llmTab || 'cloud';
+  const cfg = getLLMConfig();
+  cfg.active = activeTab;
+
+  cfg.cloud.provider = document.getElementById('cloudProvider').value || 'deepseek';
+  cfg.cloud.apiUrl = document.getElementById('cloudApiUrl').value.trim();
+  cfg.cloud.modelName = document.getElementById('cloudModelName').value.trim();
+  cfg.cloud.apiKey = document.getElementById('cloudApiKey').value.trim();
+
+  cfg.local.address = document.getElementById('lanAddressInput').value.trim();
+
+  // 如果云端 key 不为空，同步到 mbti_api_key（兼容旧逻辑）
+  if (cfg.cloud.apiKey) {
+    localStorage.setItem('mbti_api_key', cfg.cloud.apiKey);
+  }
+
+  saveLLMConfig(cfg);
+  closeLLMSettings();
+}
+
+/** 局域网扫描：遍历常见内网 C 段，并发探测 8082 端口 */
+async function scanLANForLLM() {
+  const resultEl = document.getElementById('lanScanResult');
+  const scanBtn = document.getElementById('btnScanLAN');
+  if (!resultEl) return;
+
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div class="lan-scan-status">🔍 正在扫描局域网...</div>';
+  if (scanBtn) scanBtn.disabled = true;
+
+  const subnets = getLikelySubnets();
+  const port = 8082;
+  const found = [];
+
+  // 限制扫描范围：每个子网取 .1-.254 中的偶数 + 关键地址（网关常见 .1）
+  const targets = [];
+  for (const subnet of subnets) {
+    // 先扫网关 (.1) 和常见地址
+    [1, 100, 50, 20].forEach(ip => {
+      if (!targets.some(t => t.ip === subnet + '.' + ip)) {
+        targets.push({ ip: subnet + '.' + ip });
+      }
+    });
+    // 再加一些采样
+    for (let i = 10; i <= 60; i += 10) {
+      if (!targets.some(t => t.ip === subnet + '.' + i)) {
+        targets.push({ ip: subnet + '.' + i });
+      }
+    }
+  }
+
+  // 并发探测（最多同时 10 个）
+  const CONCURRENCY = 10;
+  let scanned = 0;
+  const total = targets.length;
+
+  const probeOne = async (target) => {
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 1500);
+      const res = await fetch('http://' + target.ip + ':' + port + '/v1/models', {
+        signal: ctrl.signal,
+        mode: 'cors',
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        found.push(target.ip);
+      }
+    } catch (e) { /* 不可达，忽略 */ }
+    scanned++;
+    // 更新进度
+    if (scanned % 5 === 0 || scanned === total) {
+      updateScanProgress(resultEl, found, scanned, total);
+    }
+  };
+
+  // 分批并发
+  for (let i = 0; i < targets.length; i += CONCURRENCY) {
+    const batch = targets.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(probeOne));
+  }
+
+  // 最终更新
+  updateScanProgress(resultEl, found, total, total);
+  if (scanBtn) scanBtn.disabled = false;
+}
+
+/** 推测量局域网的子网前缀 */
+function getLikelySubnets() {
+  const subnets = [];
+  // 尝试用 RTCPeerConnection 获取本机 IP
+  try {
+    // 简单方案：检查常见的私有子网
+    // 在浏览器环境中，我们无法直接获取本机 IP，所以扫描常见子网
+  } catch (e) { /* ignore */ }
+  // 常见内网子网
+  const candidates = [
+    '192.168.0', '192.168.1', '192.168.2', '192.168.3',
+    '192.168.31', // 小米路由器
+    '192.168.50', // ASUS 路由器
+    '10.0.0', '10.0.1',
+  ];
+  return candidates;
+}
+
+function updateScanProgress(resultEl, found, scanned, total) {
+  let html = '';
+  if (scanned < total) {
+    html += `<div class="lan-scan-status">🔍 正在扫描... ${scanned}/${total} (已发现 ${found.length} 个)</div>`;
+  } else {
+    html += `<div class="lan-scan-status">✅ 扫描完成：发现 ${found.length} 个可用地址 (共扫描 ${total} 个)</div>`;
+  }
+  found.forEach(ip => {
+    const addr = 'http://' + ip + ':8082';
+    const active = document.getElementById('lanAddressInput')?.value === addr;
+    html += `<div class="lan-address-item${active ? ' active' : ''}" data-addr="${addr}">
+      <span>🟢 ${addr}</span>
+      <span class="lan-address-status ok">可用</span>
+    </div>`;
+  });
+  if (found.length === 0 && scanned >= total) {
+    html += '<div style="font-size:0.78rem; color:var(--text-muted); padding:0.5rem; text-align:center;">未发现可用服务，请确认：<br>1. 局域网内有运行大模型服务的设备<br>2. 端口为 8082<br>3. 设备在同一网段</div>';
+  }
+  resultEl.innerHTML = html;
+}
+
+/** 选择扫描到的地址 */
+function selectLANAddress(addr) {
+  const input = document.getElementById('lanAddressInput');
+  if (input) input.value = addr;
+  // 高亮选中项
+  document.querySelectorAll('.lan-address-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.addr === addr);
+  });
+}
+
+/** 测试本地模型连接 */
+async function testLANConnection() {
+  const addrInput = document.getElementById('lanAddressInput');
+  const resultEl = document.getElementById('lanTestResult');
+  const addr = addrInput?.value?.trim();
+  if (!addr) {
+    if (resultEl) { resultEl.textContent = '请输入地址'; resultEl.style.color = 'var(--accent-red)'; }
+    return;
+  }
+  if (resultEl) {
+    resultEl.textContent = '⏳ 正在测试连接...';
+    resultEl.style.color = 'var(--text-secondary)';
+  }
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 3000);
+    const apiUrl = addr.replace(/\/$/, '') + '/v1/models';
+    const res = await fetch(apiUrl, { signal: ctrl.signal, mode: 'cors' });
+    if (res.ok) {
+      if (resultEl) {
+        resultEl.textContent = '✅ 连接成功！服务可用';
+        resultEl.style.color = 'var(--accent-green)';
+      }
+    } else {
+      if (resultEl) {
+        resultEl.textContent = '⚠️ 服务响应但状态异常：' + res.status;
+        resultEl.style.color = 'var(--accent-red)';
+      }
+    }
+  } catch (e) {
+    if (resultEl) {
+      resultEl.textContent = '❌ 连接失败：' + (e.name === 'AbortError' ? '超时' : '无法访问');
+      resultEl.style.color = 'var(--accent-red)';
+    }
+  }
 }
