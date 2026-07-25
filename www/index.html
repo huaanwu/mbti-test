@@ -864,9 +864,9 @@
       <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.5;">
         自动搜索局域网内运行大模型的设备（默认端口 8082），找到后可直接连接使用。
       </div>
-      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
-        <input type="text" id="lanAddressInput" class="date-input" placeholder="http://192.168.x.x:8082" style="flex:1; font-family:monospace; font-size:0.82rem; min-width:0;" />
-        <button class="btn btn-secondary" id="btnScanLAN" style="margin-bottom:0; white-space:nowrap; padding:0.4rem 0.8rem;">🔍 自动扫描</button>
+      <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem; align-items:stretch;">
+        <input type="text" id="lanAddressInput" class="date-input" placeholder="http://192.168.x.x:8082" style="flex:1 1 0%; min-width:0; width:1px; box-sizing:border-box; font-family:monospace; font-size:0.78rem; padding:0.5rem 0.7rem;" />
+        <button type="button" id="btnScanLAN" style="flex:0 0 auto; width:auto; margin:0; white-space:nowrap; padding:0.5rem 0.7rem;">🔍 扫描</button>
       </div>
       <div id="lanScanResult" class="lan-scan-result" style="display:none;"></div>
       <button class="btn btn-secondary" id="btnTestLAN" style="margin-top:0.5rem; width:100%;">🔗 测试连接</button>
