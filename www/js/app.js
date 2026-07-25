@@ -1130,13 +1130,19 @@ function getActiveEndpoint() {
   const cfg = getLLMConfig();
   // 本地模式优先：需要有配置的地址
   if (cfg.active === 'local' && cfg.local.address) {
-    return {
-      apiUrl: cfg.local.address.replace(/\/$/, '') + '/v1/chat/completions',
-      apiKey: 'not-needed',
-      modelName: cfg.local.modelName || 'qwen2.5-7b',
-    };
+    const apiUrl = cfg.local.address.replace(/\/$/, '') + '/v1/chat/completions';
+    // 检查已知的连通状态（上次调用时记录到 _localReachable）
+    if (window._localReachable === false) {
+      // 已知不可达 → fallback 云端
+    } else {
+      return {
+        apiUrl,
+        apiKey: 'not-needed',
+        modelName: cfg.local.modelName || 'qwen2.5-7b',
+      };
+    }
   }
-  // cloud / fallback：本地没地址时自动用云端
+  // cloud / fallback：本地没地址或上次调用不可达时自动用云端
   const c = cfg.cloud;
   // API Key 来源：LLM_CONFIG 云配置 > localStorage mbti_api_key > config.js
   const key = c.apiKey || localStorage.getItem('mbti_api_key')
@@ -1301,7 +1307,14 @@ async function callDeepSeek(opts) {
     const report = data.choices[0].message.content;
     if (outputEl) outputEl.innerHTML = formatReport(report);
     if (btn) btn.style.display = 'block';
+    // 成功调用后标记本地可达
+    if (endpoint.apiKey === 'not-needed') window._localReachable = true;
   } catch (err) {
+    // 本地调用失败，标记为不可达,下次自动回退云端
+    if (endpoint.apiKey === 'not-needed') {
+      window._localReachable = false;
+      console.warn('[LLM] 本地模型调用失败,下次自动降级为云端:', err.message);
+    }
     if (outputEl) {
       outputEl.innerHTML = `
         <div style="text-align:center; color:var(--accent-red); padding:2rem 0;">
@@ -5144,6 +5157,7 @@ async function testLANConnection() {
         resultEl.textContent = '✅ 连接成功！服务可用';
         resultEl.style.color = 'var(--accent-green)';
       }
+      window._localReachable = true;
     } else {
       if (resultEl) {
         resultEl.textContent = '⚠️ 服务响应但状态异常：' + res.status;
