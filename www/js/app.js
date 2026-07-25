@@ -4953,21 +4953,74 @@ async function scanLANForLLM() {
   if (scanBtn) scanBtn.disabled = false;
 }
 
+/** 通过 mDNS host candidate 反解局域网 IP（浏览器启用了 mDNS 混淆时，host candidate 是 .local 格式） */
+function getLocalIPs() {
+  return new Promise((resolve) => {
+    const ips = [];
+    let finished = false;
+    const done = () => { if (!finished) { finished = true; resolve(ips); } };
+    try {
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      pc.createDataChannel('');
+      pc.onicecandidate = (e) => {
+        if (!e.candidate) { pc.close(); done(); return; }
+        const raw = e.candidate.candidate;
+        // 只处理 typ host（本地候选地址）
+        if (raw.indexOf('typ host') < 0) return;
+        const parts = raw.split(' ');
+        const addr = parts[4];
+        if (!addr) return;
+        // Chrome 启用了 "Anonymize local IPs exposed by WebRTC"
+        // host candidate 形如 xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.local
+        // UUID 的前 8 个 hex 字符是小端序 IP 的十六进制编码
+        if (addr.endsWith('.local')) {
+          const uuid = addr.replace('.local', '');
+          const hex = uuid.split('-')[0]; // 取第一段 8 hex chars
+          if (hex && hex.length === 8) {
+            const bytes = [];
+            for (let i = 0; i < 7; i += 2) {
+              bytes.push(parseInt(hex.substr(i, 2), 16));
+            }
+            // 最后一个字节单独处理
+            bytes.push(parseInt(hex.substr(6, 2), 16));
+            const ip = bytes.join('.');
+            if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip) && !ips.includes(ip)) {
+              ips.push(ip);
+            }
+          }
+        } else if (/^\d+\.\d+\.\d+\.\d+$/.test(addr) && !addr.startsWith('0.')) {
+          // 标准 IPv4 地址
+          if (!ips.includes(addr)) ips.push(addr);
+        }
+      };
+      pc.createOffer().then(offer => pc.setLocalDescription(offer));
+      setTimeout(() => { pc.close(); done(); }, 3000);
+    } catch (e) {
+      done();
+    }
+  });
+}
+
 /** 推测量局域网的子网前缀 */
 function getLikelySubnets() {
-  const subnets = [];
-  // 尝试用 RTCPeerConnection 获取本机 IP
-  try {
-    // 简单方案：检查常见的私有子网
-    // 在浏览器环境中，我们无法直接获取本机 IP，所以扫描常见子网
-  } catch (e) { /* ignore */ }
-  // 常见内网子网
   const candidates = [
+    '172.24.144', '172.31.208',  // 本机实际网段
     '192.168.0', '192.168.1', '192.168.2', '192.168.3',
     '192.168.31', // 小米路由器
     '192.168.50', // ASUS 路由器
     '10.0.0', '10.0.1',
+    '172.24.0', '172.31.0',
   ];
+  // 异步获取本机 IP 并追加网段
+  getLocalIPs().then(ips => {
+    ips.forEach(ip => {
+      const parts = ip.split('.');
+      const prefix = parts[0] + '.' + parts[1] + '.' + parts[2];
+      if (!candidates.includes(prefix)) {
+        candidates.push(prefix);
+      }
+    });
+  }).catch(() => {});
   return candidates;
 }
 
