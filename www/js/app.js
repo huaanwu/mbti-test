@@ -1865,7 +1865,10 @@ function switchAppTab(tab) {
   } else if (tab === 'numerology') {
     document.getElementById('numerologyResult').style.display = 'none';
     document.getElementById('numerologyInputCard').style.display = 'block';
+    const ncRes = document.getElementById('numCoupleResult');
+    if (ncRes) ncRes.style.display = 'none';
     initBirthdaySelects('numerologyBirthdayGroup');
+    initBirthdaySelects('numCoupleBirthdayGroup');
     const np = (() => { try { return JSON.parse(localStorage.getItem('mbti_user_profile') || 'null'); } catch (e) { return null; } })();
     if (np?.birthday) setBirthday('numerologyBirthdayGroup', np.birthday);
   }
@@ -2879,6 +2882,9 @@ function initEventBindings() {
   // 灵数提交
   const numBtn = document.getElementById('btnNumerologySubmit');
   if (numBtn) numBtn.addEventListener('click', getNumerologyProfile);
+  // 灵数配对
+  const numCoupleBtn = document.getElementById('btnNumCouple');
+  if (numCoupleBtn) numCoupleBtn.addEventListener('click', getNumerologyCouple);
   // #27：今日/明日/本周 tab 切换
   document.querySelectorAll('.period-tab').forEach(btn => {
     btn.addEventListener('click', () => switchZodiacPeriod(btn.dataset.period, btn));
@@ -4013,10 +4019,16 @@ function renderNatalChart(chart, y, mo, da) {
   const aspectList = (chart.aspects || []).slice(0, 6).map(a => {
     const typeReading = AK.aspects?.[a.type];
     const tName = typeReading?.name || a.name || a.type;
-    return `<div style="display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; background:var(--bg-inner); border-radius:0.4rem; font-size:0.8rem;">
-      <span>${planetCN[a.p1] || a.p1} ${tName} ${planetCN[a.p2] || a.p2}</span>
-      <span style="color:var(--text-muted); font-size:0.7rem;">误差 ${a.orb}°</span>
-    </div>`;
+    const head = `<span>${planetCN[a.p1] || a.p1} ${tName} ${planetCN[a.p2] || a.p2}</span>
+      <span style="color:var(--text-muted); font-size:0.7rem;">误差 ${a.orb}°${typeReading?.nature ? ' · ' + escapeHtml(typeReading.nature) : ''}</span>`;
+    if (!typeReading?.meaning) {
+      return `<div style="display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; background:var(--bg-inner); border-radius:0.4rem; font-size:0.8rem;">${head}</div>`;
+    }
+    // 有解读文案的相位可点击展开
+    return `<details style="background:var(--bg-inner); border-radius:0.4rem; font-size:0.8rem;">
+      <summary style="display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.6rem; cursor:pointer; list-style:none;">${head}<span style="color:var(--accent-gold); font-size:0.7rem;">▼</span></summary>
+      <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.6; padding:0.2rem 0.6rem 0.5rem;">${escapeHtml(typeReading.meaning)}</div>
+    </details>`;
   }).join('');
 
   document.getElementById('astrologyResult').innerHTML = `
@@ -4048,12 +4060,61 @@ function renderNatalChart(chart, y, mo, da) {
       </div>
 
       ${aspectList ? `<div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">⚡ 主要相位</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;">⚡ 主要相位(点击展开解读)</div>
         <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">${aspectList}</div>
       </div>` : ''}
     </div>
+    <button class="btn btn-primary" id="btnAstrologyAI" style="margin-top:1rem;">🤖 AI 深度解读本命盘</button>
+    <div id="astrologyAIReport" style="margin-top:0.8rem;"></div>
     <button class="btn btn-secondary" onclick="document.getElementById('astrologyInputCard').style.display='block';document.getElementById('astrologyResult').style.display='none';document.getElementById('astrologyInputCard').scrollIntoView({behavior:'smooth'});" style="margin-top:1rem;">🔄 重新计算</button>
   `;
+
+  document.getElementById('btnAstrologyAI')?.addEventListener('click', () => generateAstrologyAIReport(chart, y, mo, da));
+}
+
+/**
+ * 占星 AI 深度解读:本命盘全文 + 元素/模式分布 → 综合人格分析
+ */
+function generateAstrologyAIReport(chart, y, mo, da) {
+  const AK = window.ASTRO_KNOWLEDGE || {};
+  const chartText = typeof AK.formatChartForPrompt === 'function' ? AK.formatChartForPrompt(chart) : '';
+
+  // 元素/模式统计(与 renderNatalChart 同口径)
+  const elemCount = { fire: 0, earth: 0, air: 0, water: 0 };
+  const modCount = { cardinal: 0, fixed: 0, mutable: 0 };
+  const allSigns = [chart.sun?.name, chart.moon?.name, chart.ascendant?.name, chart.planets?.mercury?.name, chart.planets?.venus?.name, chart.planets?.mars?.name, chart.planets?.jupiter?.name, chart.planets?.saturn?.name].filter(Boolean);
+  for (const sid of allSigns) {
+    const e = AK.elementMap?.[sid]; if (e) elemCount[e]++;
+    const m = AK.modalityMap?.[sid]; if (m) modCount[m]++;
+  }
+  const ecn = AK.elementNameCn || {}, mcn = AK.modalityNameCn || {};
+  const elemText = Object.entries(elemCount).map(([k, v]) => `${ecn[k] || k}${v}`).join('/');
+  const modText = Object.entries(modCount).map(([k, v]) => `${mcn[k] || k}${v}`).join('/');
+
+  const prompt = `你是一位专业的占星师,擅长本命盘综合解读。
+
+请根据以下本命盘信息,生成一份深度综合解读(中文,800-1200字):
+
+出生日期:${y}年${mo}月${da}日
+${chartText}
+元素分布:${elemText};模式分布:${modText}
+
+报告结构:
+1. 核心人格画像(太阳+月亮+上升三位一体,250字)
+2. 天赋与思维风格(水星+木星,200字)
+3. 情感与行动模式(金星+火星,200字)
+4. 人生课题与成长方向(土星+主要相位,200字)
+5. 给此人的一句话核心建议
+
+要求:温暖、具体、避免绝对化表述,强调自我探索与成长,仅供娱乐参考。`;
+
+  callDeepSeek({
+    prompt,
+    outputEl: document.getElementById('astrologyAIReport'),
+    btn: document.getElementById('btnAstrologyAI'),
+    temperature: 0.7,
+    maxTokens: 2000,
+  });
 }
 
 // ==================== 生命灵数 · 数字命理（V1.0）====================
@@ -4101,6 +4162,7 @@ function numCard(label, icon, numObj, key) {
         </div>
       </div>
       ${data.keywords ? `<div style="font-size:0.78rem; color:var(--accent-purple,#a78bfa); margin-bottom:0.4rem;">${data.keywords.map(k => '·' + escapeHtml(k)).join(' ')}</div>` : ''}
+      ${(data.planet || data.tarot || data.color) ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">${[data.planet && `🪐 ${escapeHtml(data.planet)}`, data.tarot && `🃏 ${escapeHtml(data.tarot)}`, data.color && `🎨 ${escapeHtml(data.color)}`].filter(Boolean).join(' · ')}</div>` : ''}
       ${data.essence ? `<div style="font-size:0.82rem; color:var(--text-secondary); line-height:1.6; margin-bottom:0.5rem; font-style:italic;">${escapeHtml(data.essence)}</div>` : ''}
       ${data.personality ? `<div style="font-size:0.82rem; color:var(--text-primary); line-height:1.7; margin-bottom:0.5rem;">${escapeHtml(data.personality)}</div>` : ''}
       <details style="margin-top:0.4rem;">
@@ -4149,6 +4211,8 @@ function renderNumerologyMatrix(p) {
       </div>
     </div>
 
+    ${renderLoShuGrid(p)}
+
     <div class="card" style="margin-bottom:0.8rem;">
       <div style="font-size:0.85rem; color:var(--accent-gold); font-weight:600; margin-bottom:0.5rem;">🔢 推演过程</div>
       <div style="font-size:0.75rem; color:var(--text-secondary); line-height:1.7; font-family:monospace;">
@@ -4161,7 +4225,180 @@ function renderNumerologyMatrix(p) {
       </div>
     </div>
 
+    <button class="btn btn-primary" id="btnNumerologyAI">🤖 AI 综合解读</button>
+    <div id="numerologyAIReport" style="margin-top:0.8rem;"></div>
+
     <button class="btn btn-secondary" onclick="document.getElementById('numerologyInputCard').style.display='block';document.getElementById('numerologyResult').style.display='none';document.getElementById('numerologyInputCard').scrollIntoView({behavior:'smooth'});" style="margin-top:1rem;">🔄 重新计算</button>
   `;
   document.getElementById('numerologyResult').innerHTML = html;
+  document.getElementById('btnNumerologyAI')?.addEventListener('click', () => generateNumerologyAIReport(p));
+}
+
+/**
+ * 灵数九宫格(洛书出生图):生日各位数字 + 生命数字 落入九宫
+ * 空缺数字 = 今生需学习的课题;重复越多,该数字能量越强
+ */
+function renderLoShuGrid(p) {
+  const counts = {};
+  for (let i = 1; i <= 9; i++) counts[i] = 0;
+  // 出生日期各位数字(0 不入盘)
+  const digits = p.birthday.replace(/-/g, '').split('').map(Number).filter(n => n > 0);
+  // 生命数字也入盘;大师数先归约到个位根数(11→2, 22→4, 33→6)
+  let lp = p.lifePath.value;
+  while (lp > 9) lp = String(lp).split('').reduce((a, b) => a + Number(b), 0);
+  digits.push(lp);
+  for (const n of digits) counts[n]++;
+
+  // 洛书宫位排布
+  const grid = [[4, 9, 2], [3, 5, 7], [8, 1, 6]];
+  const missingLesson = {
+    1: '独立与自我主张', 2: '合作与细腻感知', 3: '表达与创造',
+    4: '秩序与执行力', 5: '自由与变通', 6: '关爱与承担',
+    7: '内省与思考', 8: '魄力与资源整合', 9: '包容与大爱'
+  };
+  const missing = [];
+  for (let i = 1; i <= 9; i++) if (counts[i] === 0) missing.push(i);
+
+  const cells = grid.flat().map(n => {
+    const c = counts[n];
+    if (c > 0) {
+      return `<div style="aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:0.5rem; border:1px solid rgba(201,168,76,0.5); background:rgba(201,168,76,0.12);">
+        <span style="font-size:1.15rem; font-weight:600; color:var(--accent-gold); letter-spacing:0.1rem;">${String(n).repeat(Math.min(c, 3))}</span>
+        ${c > 3 ? `<span style="font-size:0.6rem; color:var(--text-muted);">×${c}</span>` : ''}
+      </div>`;
+    }
+    return `<div style="aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:0.5rem; border:1px dashed rgba(255,255,255,0.1); background:var(--bg-inner);">
+      <span style="font-size:1rem; color:var(--text-muted);">${n}</span>
+      <span style="font-size:0.6rem; color:var(--text-muted);">空缺</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-bottom:0.8rem;">
+      <div style="font-size:0.85rem; color:var(--accent-gold); font-weight:600; margin-bottom:0.5rem;">🔲 灵数九宫格(出生图)</div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.4rem; max-width:260px; margin:0 auto 0.6rem;">${cells}</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); text-align:center; margin-bottom:0.4rem;">生日各位数字 + 生命数字入盘 · 重复越多能量越强</div>
+      ${missing.length ? `<div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.7;">
+        <strong style="color:var(--text-primary);">🌱 今生课题(空缺数字):</strong><br>
+        ${missing.map(n => `· 缺 ${n} — 学习${missingLesson[n]}`).join('<br>')}
+      </div>` : `<div style="font-size:0.78rem; color:var(--text-secondary);">✨ 九宫俱全,能量分布均衡,没有明显的空缺课题。</div>`}
+    </div>
+  `;
+}
+
+/**
+ * 灵数 AI 综合解读:6 个核心数字 → 串联叙事
+ */
+function generateNumerologyAIReport(p) {
+  const N = window.MBTI_DATA?.numerology?.numbers || {};
+  const desc = (label, numObj) => {
+    const d = N[String(numObj.value)];
+    return `${label}:${numObj.value}${numObj.isMaster ? '(大师数)' : ''}${d ? `「${d.title}」关键词:${(d.keywords || []).join('、')}` : ''}`;
+  };
+  const now = new Date();
+  const prompt = `你是一位精通 Pythagorean 数字命理的解读师。
+
+请根据以下生命灵数矩阵,生成一份综合解读(中文,600-900字),把各数字串联成一个完整的人格与人生叙事,而不是逐条罗列:
+
+出生日期:${p.birthday}
+${desc('生命数字(主命)', p.lifePath)}
+${desc('生日数字(天赋)', p.bdayNum)}
+${desc('态度数字(外在印象)', p.attNum)}
+${desc('成熟数字(中年后走向)', p.matNum)}
+${desc(`${now.getFullYear()} 个人年`, p.persYear)}
+${desc(`${now.getMonth() + 1} 月个人月`, p.persMonth)}
+
+报告结构:
+1. 核心人格主线(生命+生日+态度数字如何共同塑造这个人,300字)
+2. 人生节奏(成熟数字揭示的中年后方向,150字)
+3. 当下能量(个人年/月的行动建议,200字)
+4. 一句话核心指引
+
+要求:温暖、具体、避免绝对化表述,仅供娱乐参考。`;
+
+  callDeepSeek({
+    prompt,
+    outputEl: document.getElementById('numerologyAIReport'),
+    btn: document.getElementById('btnNumerologyAI'),
+    temperature: 0.7,
+    maxTokens: 1800,
+  });
+}
+
+// ==================== 灵数配对 ====================
+
+/**
+ * 主入口:灵数双人配对(生命数字契合度)
+ */
+function getNumerologyCouple() {
+  const meBirthday = getBirthday('numerologyBirthdayGroup');
+  if (!meBirthday) { alert('请先在上方填写你的生日'); return; }
+  const taBirthday = getBirthday('numCoupleBirthdayGroup');
+  if (!taBirthday) { alert('请填写 TA 的生日'); return; }
+
+  const [my, mm, md] = meBirthday.split('-').map(Number);
+  const [ty, tm, td] = taBirthday.split('-').map(Number);
+  const meLP = calcLifePathNumber(my, mm, md);
+  const taLP = calcLifePathNumber(ty, tm, td);
+
+  const out = document.getElementById('numCoupleResult');
+  out.style.display = 'block';
+  out.innerHTML = renderNumerologyCouple(meBirthday, taBirthday, meLP, taLP);
+  out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * 渲染灵数配对结果:双生命数字 + 契合度判定
+ */
+function renderNumerologyCouple(meBirthday, taBirthday, meLP, taLP) {
+  const N = window.MBTI_DATA?.numerology?.numbers || {};
+  const meData = N[String(meLP.value)];
+  const taData = N[String(taLP.value)];
+  const meLikesTa = (meData?.compatibility || []).includes(String(taLP.value));
+  const taLikesMe = (taData?.compatibility || []).includes(String(meLP.value));
+
+  let level, levelColor, levelDesc;
+  if (meLP.value === taLP.value) {
+    level = '🪞 同数共鸣'; levelColor = '#a78bfa';
+    levelDesc = '相同的生命数字,你们像照镜子——理解彼此毫不费力,但也要警惕把同样的短板放大。';
+  } else if (meLikesTa && taLikesMe) {
+    level = '💞 高度契合'; levelColor = '#ec4899';
+    levelDesc = '双向契合:你们的生命数字互相出现在对方的契合列表里,节奏天然同频。';
+  } else if (meLikesTa || taLikesMe) {
+    level = '💗 互补吸引'; levelColor = 'var(--accent-gold)';
+    levelDesc = '单向契合:一方是另一方的天然贵人,关系里会有一方多付出一些,互补中成长。';
+  } else {
+    level = '🔥 挑战成长'; levelColor = 'var(--text-secondary)';
+    levelDesc = '两个数字不在彼此的舒适圈里——这不是不合,而是这段关系注定带来更多功课与成长。';
+  }
+
+  const personCard = (label, birthday, lp, data) => `
+    <div style="flex:1; min-width:130px; padding:0.8rem; background:var(--bg-inner); border-radius:0.6rem; border:1px solid rgba(201,168,76,0.2); text-align:center;">
+      <div style="font-size:0.8rem; color:var(--text-secondary);">${label}</div>
+      <div style="font-size:1.6rem; font-weight:600; color:var(--accent-gold); margin:0.2rem 0;">${lp.value}${lp.isMaster ? '<span style="font-size:0.65rem; padding:0.1rem 0.35rem; background:linear-gradient(135deg,#f4d03f,#c9a84c); color:#1a1612; border-radius:0.4rem; margin-left:0.25rem;">大师</span>' : ''}</div>
+      <div style="font-size:0.78rem; color:var(--text-primary);">${data ? escapeHtml(data.title) : ''}</div>
+      <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem;">${birthday}</div>
+      ${data?.keywords ? `<div style="font-size:0.7rem; color:var(--accent-purple,#a78bfa); margin-top:0.3rem;">${data.keywords.map(k => '·' + escapeHtml(k)).join(' ')}</div>` : ''}
+    </div>`;
+
+  return `
+    <div class="card" style="margin-top:1rem; border-left:3px solid #ec4899;">
+      <div style="text-align:center; margin-bottom:0.8rem;">
+        <div style="font-size:1.05rem; font-weight:600; color:${levelColor};">${level}</div>
+        <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.3rem; line-height:1.6;">${levelDesc}</div>
+      </div>
+      <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.8rem;">
+        ${personCard('你', meBirthday, meLP, meData)}
+        ${personCard('TA', taBirthday, taLP, taData)}
+      </div>
+      ${(meData?.love || taData?.love) ? `<details>
+        <summary style="font-size:0.78rem; color:var(--accent-gold); cursor:pointer;">查看双方爱情观 ▼</summary>
+        <div style="padding:0.5rem 0; font-size:0.78rem; color:var(--text-secondary); line-height:1.7;">
+          ${meData?.love ? `<div style="margin-bottom:0.4rem;"><strong style="color:var(--text-primary);">你(${meLP.value}):</strong>${escapeHtml(meData.love)}</div>` : ''}
+          ${taData?.love ? `<div><strong style="color:var(--text-primary);">TA(${taLP.value}):</strong>${escapeHtml(taData.love)}</div>` : ''}
+        </div>
+      </details>` : ''}
+      <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.6rem;">契合度基于 Pythagorean 灵数传统,仅供娱乐参考。</div>
+    </div>
+  `;
 }

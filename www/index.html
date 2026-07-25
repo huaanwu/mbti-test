@@ -752,6 +752,22 @@
       </button>
     </div>
 
+    <div class="card" id="numCoupleCard">
+      <div style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:0.8rem; line-height:1.6;">
+        💞 <strong>灵数配对</strong>:输入 TA 的生日,看你们的生命数字契合度(需先填好上方你的生日)。
+      </div>
+      <label style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">TA 的生日</label>
+      <div class="birthday-selects" id="numCoupleBirthdayGroup">
+        <select class="date-input bd-year" style="flex:2"><option value="">年份</option></select>
+        <select class="date-input bd-month" style="flex:1.2"><option value="">月份</option></select>
+        <select class="date-input bd-day" style="flex:1.2"><option value="">日</option></select>
+      </div>
+      <button class="btn btn-primary" id="btnNumCouple" style="margin-top:1rem;">
+        💞 开始配对
+      </button>
+    </div>
+    <div id="numCoupleResult" style="display:none;"></div>
+
     <div id="numerologyResult" style="display:none;"></div>
 
     <div class="disclaimer">
