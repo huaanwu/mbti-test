@@ -94,8 +94,8 @@
   }
 
   async function loadWithCache(key, url) {
-    // 1. 内存缓存
-    if (MBTI_DATA[key]) {
+    // 1. 内存缓存（非空数组才复用，避免 [] 被误判为已就绪）
+    if (MBTI_DATA[key] && MBTI_DATA[key].length) {
       return MBTI_DATA[key];
     }
     // 2. IndexedDB 缓存

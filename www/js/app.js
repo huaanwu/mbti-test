@@ -2399,8 +2399,11 @@ function getZodiacReading() {
     return;
   }
   // 生日值已是本地日历日 YYYY-MM-DD，直接 split 取月日（避免 new Date UTC 偏移）
-  const [_, m, d] = birthday.split('-').map(Number);
-  const z = getZodiacByDate(m, d);
+  const z = (function() {
+    const mm = parseInt(birthday.split('-')[1], 10);
+    const dd = parseInt(birthday.split('-')[2], 10);
+    return getZodiacByDate(mm, dd);
+  })();
   if (!z) {
     alert('日期无效');
     return;
