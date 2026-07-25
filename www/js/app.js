@@ -4900,20 +4900,11 @@ async function scanLANForLLM() {
   const port = 8082;
   const found = [];
 
-  // 限制扫描范围：每个子网取 .1-.254 中的偶数 + 关键地址（网关常见 .1）
+  // 每个子网扫全部 1-254（每子网 254 个地址）
   const targets = [];
   for (const subnet of subnets) {
-    // 先扫网关 (.1) 和常见地址
-    [1, 100, 50, 20].forEach(ip => {
-      if (!targets.some(t => t.ip === subnet + '.' + ip)) {
-        targets.push({ ip: subnet + '.' + ip });
-      }
-    });
-    // 再加一些采样
-    for (let i = 10; i <= 60; i += 10) {
-      if (!targets.some(t => t.ip === subnet + '.' + i)) {
-        targets.push({ ip: subnet + '.' + i });
-      }
+    for (let i = 1; i <= 254; i++) {
+      targets.push({ ip: subnet + '.' + i });
     }
   }
 
