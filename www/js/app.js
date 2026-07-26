@@ -1133,7 +1133,8 @@ function getActiveEndpoint() {
     const apiUrl = cfg.local.address.replace(/\/$/, '') + '/v1/chat/completions';
     // 检查已知的连通状态（上次调用时记录到 _localReachable）
     if (window._localReachable === false) {
-      // 已知不可达 → fallback 云端
+      // 已知不可达 → fall back 到云端,以保证能使用
+      console.warn('[LLM] 本地不可达,自动回退云端');
     } else {
       return {
         apiUrl,
@@ -1316,12 +1317,18 @@ async function callDeepSeek(opts) {
       console.warn('[LLM] 本地模型调用失败,下次自动降级为云端:', err.message);
     }
     if (outputEl) {
+      // 详细诊断:显示当前 endpoint 和错误
+      const mode = endpoint.apiKey === 'not-needed' ? '本地' : '云端';
+      const hint = endpoint.apiKey === 'not-needed'
+        ? '确认电脑和手机在同一 WiFi,8082 端口已启动,防火墙放行'
+        : '检查 API Key 是否有效,网络是否可达';
       outputEl.innerHTML = `
         <div style="text-align:center; color:var(--accent-red); padding:2rem 0;">
           <div style="font-size:1.5rem; margin-bottom:0.5rem;">⚠️</div>
           <div>生成报告失败：<span class="ai-error-msg"></span></div>
-          <div style="font-size:0.8rem; margin-top:0.5rem; color:var(--text-muted);">
-            请检查网络，或重新填写 API Key
+          <div style="font-size:0.75rem; margin-top:0.5rem; color:var(--text-muted); word-break:break-all; padding:0 1rem;">
+            <div>模式: <b>${mode}</b> · 端点: <b>${endpoint.apiUrl}</b></div>
+            <div style="margin-top:0.3rem;">${hint}</div>
           </div>
         </div>
       `;
